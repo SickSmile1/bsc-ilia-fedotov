@@ -1,0 +1,148 @@
+ARG PYVISTA_VERSION=0.44.1
+
+# Used to set the correct PYTHONPATH for the real and complex install of
+# DOLFINx
+ARG PYTHON_VERSION=3.12
+# Base image for end-user images
+ARG BASEIMAGE=ghcr.io/fenics/dolfinx/dev-env:current
+
+FROM ${BASEIMAGE} as dolfinx-onbuild
+LABEL description="DOLFINx in 32-bit real and complex modes (onbuild)"
+
+ARG PYTHON_VERSION
+
+ADD dolfinx/docker/dolfinx-real-mode /usr/local/bin/dolfinx-real-mode
+ADD dolfinx/docker/dolfinx-complex-mode /usr/local/bin/dolfinx-complex-mode
+RUN chmod +x /usr/local/bin/dolfinx-*-mode
+
+ONBUILD WORKDIR /src
+
+# This leaves the sources inside the container. This is a limitation of
+# Docker. There is some trickery in the intermediate and DOLFINx
+# containers that can be used to remove this source if needed, see
+# below.
+ONBUILD ADD basix/ /src/basix/
+ONBUILD ADD ufl/ /src/ufl/
+ONBUILD ADD ffcx/ /src/ffcx/
+ONBUILD ADD dolfinx/ /src/dolfinx/
+
+# These files are empty by default, i.e. they do nothing.
+# The user can set them at build time if they wish.
+ONBUILD ADD dolfinx/docker/dolfinx_jit_options.json /root/.config/dolfinx/dolfinx_jit_options.json
+ONBUILD ADD dolfinx/docker/ffcx_options.json /root/.config/ffcx/ffcx_options.json
+
+# The following ARGS are used in the DOLFINx layer.
+# They are safe defaults.
+# CMake build type for DOLFINx C++ build. See CMake documentation.
+ONBUILD ARG DOLFINX_CMAKE_BUILD_TYPE="Release"
+
+ONBUILD RUN pip install --no-cache-dir nanobind scikit-build-core[pyproject]
+
+# The dolfinx-onbuild container expects to have folders basix/ ufl/
+# ffcx/ and dolfinx/ mounted/shared at /src.
+ONBUILD RUN cd basix && cmake -G Ninja -DCMAKE_BUILD_TYPE=${DOLFINX_CMAKE_BUILD_TYPE} -B build-dir -S ./cpp && \
+    cmake --build build-dir && \
+    cmake --install build-dir && \
+    pip install ./python && \
+    cd ../ufl && pip install --no-cache-dir . && \
+    cd ../ffcx && pip install --no-cache-dir . && \
+    cd ../ && pip install --no-cache-dir ipython
+
+ONBUILD RUN cd dolfinx && \
+    mkdir -p build-real && \
+    cd build-real && \
+    PETSC_ARCH=linux-gnu-real64-32 cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local/dolfinx-real -DCMAKE_BUILD_TYPE=${DOLFINX_CMAKE_BUILD_TYPE} ../cpp && \
+    ninja install && \
+    cd ../python && \
+    PETSC_ARCH=linux-gnu-real64-32 pip -v install \
+      --config-settings=cmake.build-type="${DOLFINX_CMAKE_BUILD_TYPE}" --config-settings=install.strip=false --no-build-isolation --check-build-dependencies \
+      --target /usr/local/dolfinx-real/lib/python${PYTHON_VERSION}/dist-packages --no-dependencies --no-cache-dir . && \
+    git clean -fdx && \
+    cd ../ && \
+    mkdir -p build-complex && \
+    cd build-complex && \
+    PETSC_ARCH=linux-gnu-complex128-32 cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr/local/dolfinx-complex -DCMAKE_BUILD_TYPE=${DOLFINX_CMAKE_BUILD_TYPE} ../cpp && \
+    ninja install && \
+    . /usr/local/dolfinx-complex/lib/dolfinx/dolfinx.conf && \
+    cd ../python && \
+    PETSC_ARCH=linux-gnu-complex128-32 pip -v install \
+      --config-settings=cmake.build-type="${DOLFINX_CMAKE_BUILD_TYPE}" --config-settings=install.strip=false --no-build-isolation --check-build-dependencies \
+      --target /usr/local/dolfinx-complex/lib/python${PYTHON_VERSION}/dist-packages --no-dependencies --no-cache-dir .
+
+# Real by default.
+ONBUILD ENV PKG_CONFIG_PATH=/usr/local/dolfinx-real/lib/pkgconfig:$PKG_CONFIG_PATH \
+    CMAKE_PREFIX_PATH=/usr/local/dolfinx-real/lib/cmake:$CMAKE_PREFIX_PATH \
+    PETSC_ARCH=linux-gnu-real64-32 \
+    PYTHONPATH=/usr/local/dolfinx-real/lib/python${PYTHON_VERSION}/dist-packages:$PYTHONPATH \
+    LD_LIBRARY_PATH=/usr/local/dolfinx-real/lib:$LD_LIBRARY_PATH
+
+ONBUILD WORKDIR /root
+
+########################################
+
+FROM dolfinx-onbuild as intermediate
+
+########################################
+
+FROM ${BASEIMAGE} as dolfinx
+LABEL description="DOLFINx in 32-bit real and complex modes"
+
+ARG PYTHON_VERSION
+
+# This layer manually copies the build artifacts from intermediate into
+# dev-env to make the final image. This is a workaround for a well known
+# limitation of Docker that you cannot cleanup after an ADD operation.
+# This reduces the container size by around 80MB as the /src folder no
+# longer exists in the final image.
+COPY --from=intermediate /usr/local /usr/local
+COPY --from=intermediate /root/.config /root/.config
+COPY --from=intermediate /dolfinx-env /dolfinx-env
+
+# Real by default.
+# Note that because we inherit from dev-env we do not inherit these ENV from
+# dolfinx-onbuild so this must be repeated here.
+ENV PKG_CONFIG_PATH=/usr/local/dolfinx-real/lib/pkgconfig:$PKG_CONFIG_PATH \
+    CMAKE_PREFIX_PATH=/usr/local/dolfinx-real/lib/cmake:$CMAKE_PREFIX_PATH \
+    PETSC_ARCH=linux-gnu-real64-32 \
+    PYTHONPATH=/usr/local/dolfinx-real/lib/python${PYTHON_VERSION}/dist-packages:$PYTHONPATH \
+    LD_LIBRARY_PATH=/usr/local/dolfinx-real/lib:$LD_LIBRARY_PATH
+
+########################################
+
+FROM dolfinx as lab
+LABEL description="DOLFINx Jupyter Lab"
+
+ARG PYVISTA_VERSION
+
+WORKDIR /root
+
+RUN pip install --no-cache-dir jupyter jupyterlab
+
+# pyvista dependencies from apt
+RUN apt-get -qq update && \
+    apt-get -y install libgl1-mesa-dev xvfb && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Install pyvista from PyPI. pyvisa depends on (py)vtk), but vtk wheels are not
+# available on pypi for linux/arm64, so we use a custom build wheel.
+# matplotlib improves plotting quality with better color maps and
+# properly rendering colorbars.
+# trame is the preferred backend for pyvista.
+RUN dpkgArch="$(dpkg --print-architecture)"; \
+    pip install matplotlib; \
+    case "$dpkgArch" in amd64) \
+      pip install --no-cache-dir pyvista[trame]==${PYVISTA_VERSION} ;; \
+    esac; \
+    case "$dpkgArch" in arm64) \
+      pip install --no-cache-dir https://github.com/finsberg/vtk-aarch64/releases/download/vtk-9.3.0-cp312/vtk-9.3.0.dev0-cp312-cp312-linux_aarch64.whl && \
+      pip install --no-cache-dir pyvista[trame]==${PYVISTA_VERSION} ;; \
+    esac; \
+    pip cache purge
+
+# Jupyter Notebook kernel specification for complex build DOLFINx
+ADD dolfinx/docker/complex-kernel.json /usr/local/share/jupyter/kernels/python3-complex/kernel.json
+
+EXPOSE 8888/tcp
+ENV SHELL /bin/bash
+ENTRYPOINT ["jupyter", "lab", "--ip", "0.0.0.0", "--no-browser", "--allow-root"]

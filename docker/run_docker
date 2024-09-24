@@ -1,0 +1,14 @@
+#!/bin/bash
+# get dolphinx container
+#
+# for the first time:
+# docker pull ghcr.io/jorgensd/dolfinx-tutorial:v0.8.0
+# mkdir docker
+# cd docker
+# wget https://github.com/jorgensd/dolfinx-tutorial/blob/main/docker/Dockerfile
+# cd ..
+# wget https://github.com/jorgensd/dolfinx-tutorial/blob/main/pyproject.toml
+# docker build -f ./docker/Dockerfile -t local_lab_env .
+
+# docker run --rm -ti -v $(pwd):/root/shared -w /root/shared  --init -p 8888:8888 local_lab_env
+docker run --rm -ti --init -p 8888:8888 -v "$(pwd)":/root/shared dolfinx/lab:stable

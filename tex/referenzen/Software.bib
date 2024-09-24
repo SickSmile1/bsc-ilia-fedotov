@@ -1,0 +1,62 @@
+% LAMMPS
+@article{Plimpton1995,
+title = {{Fast Parallel Algorithms for Short-Range Molecular Dynamics}},
+journal = {Journal of Computational Physics},
+volume = {117},
+number = {1},
+pages = {1-19},
+year = {1995},
+issn = {0021-9991},
+doi = {https://doi.org/10.1006/jcph.1995.1039},
+url = {http://www.sciencedirect.com/science/article/pii/S002199918571039X},
+author = {Steve Plimpton},
+abstract = {Three parallel algorithms for classical molecular dynamics are presented. The first assigns each processor a fixed subset of atoms; the second assigns each a fixed subset of inter-atomic forces to compute; the third assigns each a fixed spatial region. The algorithms are suitable for molecular dynamics models which can be difficult to parallelize efficiently—those with short-range forces where the neighbors of each atom change rapidly. They can be implemented on any distributed-memory parallel machine which allows for message-passing of data between independently executing processors. The algorithms are tested on a standard Lennard-Jones benchmark problem for system sizes ranging from 500 to 100,000,000 atoms on several parallel supercomputers--the nCUBE 2, Intel iPSC/860 and Paragon, and Cray T3D. Comparing the results to the fastest reported vectorized Cray Y-MP and C90 algorithm shows that the current generation of parallel machines is competitive with conventional vector supercomputers even for small problems. For large problems, the spatial algorithm achieves parallel efficiencies of 90\% and a 1840-node Intel Paragon performs up to 165 faster than a single Cray C9O processor. Trade-offs between the three algorithms and guidelines for adapting them to more complex molecular dynamics simulations are also discussed.}
+}
+
+% OVITO
+@article{Stukowski2010,
+abstract = {The Open Visualization Tool (OVITO) is a new 3D visualization software designed for post-processing atomistic data obtained from molecular dynamics or Monte Carlo simulations. Unique analysis, editing and animations functions are integrated into its easy-to-use graphical user interface. The software is written in object-oriented C++, controllable via Python scripts and easily extendable through a plug-in interface. It is distributed as open-source software and can be downloaded from the website http://ovito.sourceforge.net/.},
+author = {Stukowski, Alexander},
+journal = {Modelling and Simulation in Materials Science and Engineering},
+number = {1},
+pages = {15012},
+title = {{Visualization and analysis of atomistic simulation data with OVITO--the Open Visualization Tool}},
+volume = {18},
+year = {2010}
+}
+
+% ASE atomic simulation environment
+@article{HjorthLarsen2017,
+author = {Hjorth Larsen, Ask and Jorgen Mortensen, Jens and Blomqvist, Jakob and Castelli, Ivano E and Christensen, Rune and Dulak, Marcin and Friis, Jesper and Groves, Michael N and Hammer, Bjork and Hargus, Cory and Hermes, Eric D and Jennings, Paul C and Bjerre Jensen, Peter and Kermode, James and Kitchin, John R and Leonhard Kolsbjerg, Esben and Kubal, Joseph and Kaasbjerg, Kristen and Lysgaard, Steen and Bergmann Maronsson, Jon and Maxson, Tristan and Olsen, Thomas and Pastewka, Lars and Peterson, Andrew and Rostgaard, Carsten and Schiotz, Jakob and Schutt, Ole and Strange, Mikkel and Thygesen, Kristian S and Vegge, Tejs and Vilhelmsen, Lasse and Walter, Michael and Zeng, Zhenhua and Jacobsen, Karsten W},
+doi = {10.1088/1361-648X/aa680e},
+issn = {0953-8984},
+journal = {Journal of Physics: Condensed Matter},
+month = {jul},
+number = {27},
+pages = {273002},
+publisher = {IOP Publishing},
+title = {{The atomic simulation environment-a Python library for working with atoms}},
+url = {http://stacks.iop.org/0953-8984/29/i=27/a=273002?key=crossref.20f9751653d872507bf6c0cc5737032c},
+volume = {29},
+year = {2017}
+}
+
+% VORO++ library in LAMMPS, OVITO
+@techreport{Rycroft2009,
+address = {Berkeley, CA},
+author = {Rycroft, Chris and Chris},
+doi = {10.2172/946741},
+institution = {Lawrence Berkeley National Laboratory (LBNL)},
+keywords = {accuracy,algorithms,boundary conditions,construction,granular materials,physics,voronoi tessellation, computational geometry},
+month = {jan},
+title = {{Voro++: a three-dimensional Voronoi cell library in C++}},
+url = {http://www.osti.gov/servlets/purl/946741-A8FxbI/},
+year = {2009}
+}
+
+% matscipy
+@electronic{matscipy,
+author = {Pastewka, Lars and Kermode, James},
+title = {{matscipy}},
+url = {https://github.com/libAtoms/matscipy},
+}

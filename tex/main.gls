@@ -1,0 +1,25 @@
+\glossarysection[\glossarytoctitle]{\glossarytitle}\glossarypreamble
+\begin{theglossary}\glossaryheader
+\glsgroupheading{glssymbols}\relax \glsresetentrylist %
+\glossentry{youngsmod}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{bulkmod}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{temperature}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{Tg}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{heaviside}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{kronecker}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{poissonratio}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{kb}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{pressure}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}}}%
+\glossentry{density}{\glossaryentrynumbers{\relax 
+		\setentrycounter[]{page}\glsignore{1}\delimN 
+		\setentrycounter[]{page}\glsnumberformat{4}}}%
+\end{theglossary}\glossarypostamble

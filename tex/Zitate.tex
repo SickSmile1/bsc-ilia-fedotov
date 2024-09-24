@@ -1,0 +1,37 @@
+% !TeX spellcheck = de_DE
+\chapter{Zitate}
+
+\section{Syntax}
+Die Informationen über die zitierten Quellen müssen als \textasteriskcentered .bib-Dateien bereitgestellt und in \glqq{} main.tex\grqq{} geladen werden:
+\begin{verbatim}
+	\addbibresource{referenzen/Software.bib}
+	\addbibresource{referenzen/Potentiale.bib}
+\end{verbatim}
+Dabei dürfen alle Quellen in einer Datei gespeichert sein, aber auch auf mehrere Dateien verteil werden.
+
+Quellen können entweder einzeln zitiert werden, oder als Gruppe:
+\begin{verbatim}
+	\cite{Schlüssel}
+	\cite{Schlüssel_1,Schlüssel_2,Schlüssel_3,Schlüssel_4}
+\end{verbatim}
+
+Um Zitate einzufügen wie im Beispiel unten sollte ein geschütztes Leerzeichen (\textasciitilde) verwendet werden, um Zeilenumbrüche am Zitat zu verhindern:
+\begin{verbatim}
+	LAMMPS~\cite{Plimpton1995}
+\end{verbatim}
+
+In das Dokument eingefügt wird die Bibliographie in \glqq{} main.tex\grqq{} mit
+\begin{verbatim}
+	\printbibliography
+\end{verbatim}
+
+\section{Anpassungsmöglichkeiten}
+In \glqq{} main.tex\grqq{} gibt es verschiedene Möglichkeiten die Art der Zitierung zu beeinflussen.
+\begin{verbatim}
+	\usepackage[backend=biber,style=numeric,citestyle=numeric-comp,sorting=none]{biblatex}
+\end{verbatim}
+Hier wurde festgelegt die Zitate mit Zahlen zuzuordnen (\glqq{}style=numeric\grqq{}), mehrere Zitate an einer Stelle kompakt zu beschreiben (\glqq{}citestyle=numeric-comp\grqq{}) und die Quellen in der Reihenfolge aufzulisten in der sie im Text auftauchen anstatt sie zu sortieren (\glqq{}sorting=none\grqq{}).
+
+\section{Beispiel - Softwares und Potentiale}
+Als Beispiel sind hier einige Softwares genannt, die in unserer Gruppe häufig verwendet werde: LAMMPS~\cite{Plimpton1995}, OVITO~\cite{Stukowski2010}, ASE~\cite{HjorthLarsen2017}, matscipy~\cite{matscipy} und voro++~\cite{Rycroft2009}.
+Häufig verwendete interatomare Potentiale für amorphen Kohlenstoff~\cite{Deringer2016,Pastewka:2013p205410,Liyanage2014} und CuZr metallisches Glas~\cite{Mendelev2009,Cheng2009}.
