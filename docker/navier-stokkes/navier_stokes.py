@@ -20,15 +20,27 @@ import pyvista
 
 from dolfinx.fem import Constant, Function, functionspace, assemble_scalar, dirichletbc, form, locate_dofs_geometrical
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector, apply_lifting, create_vector, set_bc
-from dolfinx.io import VTXWriter
-from dolfinx.mesh import create_unit_square,create_rectangle, CellType
+from dolfinx.io import VTXWriter, gmshio
+from dolfinx.mesh import create_unit_square,create_rectangle, create_mesh, CellType
 from dolfinx.plot import vtk_mesh
 from basix.ufl import element
 from ufl import (FacetNormal, Identity, TestFunction, TrialFunction,
                  div, dot, ds, dx, inner, lhs, nabla_grad, rhs, sym, grad, inner)
 
 # %%
-mesh = create_rectangle(MPI.COMM_WORLD, [[0.,0.], [3.,1.]],[50,20], CellType.triangle)
+#comm = MPI.COMM_WORLD
+#mesh, a1, a2 = gmshio.read_from_msh("mesh/bezier2.msh", comm)
+#x1 = mesh.geometry.x
+#a1
+
+# %%
+comm = MPI.COMM_WORLD
+height, length = .55, 5
+discrete_x, discrete_y = 50,10
+mesh = create_rectangle(MPI.COMM_WORLD, [[0.,0.], [length, height]],[discrete_x,discrete_y], CellType.triangle)
+#mesh, _, _ = gmshio.read_from_msh("mesh/bezier1.msh", comm)
+
+pressure = 25 # kpa, due to length in micrometer
 t = 0
 T = 10
 num_steps = 500
@@ -50,13 +62,16 @@ q = TestFunction(Q)
 # %%
 # functions to set dirichlet boundary conditions and inflow p
 def walls(x):
-    return np.logical_or(np.isclose(x[1], 0), np.isclose(x[1], 1))
+    return np.logical_or(np.isclose(x[1], 0), np.isclose(x[1], height))
 
 def inflow(x):
     return np.isclose(x[0], 0)
 
 def outflow(x):
-    return np.isclose(x[0], 3)
+    return np.isclose(x[0], length)
+
+def return_all(x):
+    return x
 
 
 # %%
@@ -67,7 +82,7 @@ bc_noslip = dirichletbc(u_noslip, wall_dofs, V)
 
 # %%
 inflow_dofs = locate_dofs_geometrical(Q, inflow)
-bc_inflow = dirichletbc(PETSc.ScalarType(8), inflow_dofs, Q)
+bc_inflow = dirichletbc(PETSc.ScalarType(pressure), inflow_dofs, Q)
 
 # %%
 outflow_dofs = locate_dofs_geometrical(Q, outflow)
@@ -237,6 +252,28 @@ solver3.destroy()
 
 # %%
 pyvista.start_xvfb()
+topology, cell_types, geometry = vtk_mesh(Q)
+values = np.zeros((geometry.shape[0], 3), dtype=np.float64)
+plotter = pyvista.Plotter()
+
+x = np.linspace(0, 1, 561)
+chart = pyvista.Chart2D()
+chart.line(x, p_.x.array[:])
+# chart.x_range = [5, 10]  # Focus on the second half of the curve
+chart.show()
+
+
+# %%
+# read: https://en.wikipedia.org/wiki/Pressure-correction_method
+import matplotlib.pyplot as plt
+topology, cell_types, geometry = vtk_mesh(V)
+values = np.zeros((geometry.shape[0], 3), dtype=np.float64)
+values[:, :len(u_n)] = u_n.x.array.real.reshape((geometry.shape[0], len(u_n)))
+#values[:,1]
+plt.plot(np.linspace(0, len(values[:,1]),len(values[:,1])), values[:,1] )
+
+# %%
+pyvista.start_xvfb()
 topology, cell_types, geometry = vtk_mesh(V)
 values = np.zeros((geometry.shape[0], 3), dtype=np.float64)
 values[:, :len(u_n)] = u_n.x.array.real.reshape((geometry.shape[0], len(u_n)))
@@ -244,7 +281,7 @@ values[:, :len(u_n)] = u_n.x.array.real.reshape((geometry.shape[0], len(u_n)))
 # Create a point cloud of glyphs
 function_grid = pyvista.UnstructuredGrid(topology, cell_types, geometry)
 function_grid["u"] = values
-glyphs = function_grid.glyph(orient="u", factor=0.2)
+glyphs = function_grid.glyph(orient="u", factor=0.7)
 
 # Create a pyvista-grid for the mesh
 #mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)
@@ -254,10 +291,79 @@ glyphs = function_grid.glyph(orient="u", factor=0.2)
 plotter = pyvista.Plotter()
 #plotter.add_mesh(grid, style="wireframe", color="k")
 plotter.add_mesh(glyphs)
+plotter.window_size = [800, 600]
+plotter.set_scale(yscale=4)
 plotter.view_xy()
+plotter.save_graphic("glyphs2.pdf",title='PyVista Export')
 if not pyvista.OFF_SCREEN:
     plotter.show()
 else:
-    fig_as_array = plotter.screenshot("glyphs2.png")
+    fig_as_array = plotter.screenshot("glyphs2.pdf")
+
+# %%
+import numpy as np
+import matplotlib.pyplot as plt
+from mpi4py import MPI
+from petsc4py import PETSc
+from dolfinx.fem import locate_dofs_geometrical, dirichletbc
+from dolfinx.mesh import create_rectangle, CellType
+
+# Create a rectangular mesh
+mesh = create_rectangle(MPI.COMM_WORLD, [[0., 0.], [5., .55]], [50, 10], CellType.triangle)
+
+# Functions to define boundaries
+def lower_wall(x):
+    return np.isclose(x[1], 0)
+
+def upper_wall(x):
+    return np.isclose(x[1], .55)
+
+def inflow(x):
+    return np.isclose(x[0], 0)
+
+def outflow(x):
+    return np.isclose(x[0], 5)
+
+# Locate DOFs for inflow, outflow, lower and upper walls
+inflow_dofs = locate_dofs_geometrical(Q, inflow)
+outflow_dofs = locate_dofs_geometrical(Q, outflow)
+lower_wall_dofs = locate_dofs_geometrical(Q, lower_wall)
+upper_wall_dofs = locate_dofs_geometrical(Q, upper_wall)
+
+# Extract points from the mesh
+points = mesh.geometry.x
+
+# Plot the mesh and boundary regions using matplotlib
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Plot the full mesh
+for cell in mesh.topology.connectivity(2, 0).array.reshape(-1, 3):
+    triangle = points[cell]
+    ax.plot(triangle[:, 0], triangle[:, 1], 'k-', linewidth=0.5)
+
+# Plot inflow boundary points
+inflow_points = points[inflow_dofs]
+ax.plot(inflow_points[:, 0], inflow_points[:, 1], 'bo', label="Inflow")
+
+# Plot outflow boundary points
+outflow_points = points[outflow_dofs]
+ax.plot(outflow_points[:, 0], outflow_points[:, 1], 'ro', label="Outflow")
+
+# Plot lower wall points
+lower_wall_points = points[lower_wall_dofs]
+ax.plot(lower_wall_points[:, 0], lower_wall_points[:, 1], 'go', label="Lower Wall")
+
+# Plot upper wall points
+upper_wall_points = points[upper_wall_dofs]
+ax.plot(upper_wall_points[:, 0], upper_wall_points[:, 1], 'mo', label="Upper Wall")
+
+# Add labels, legend and show the plot
+ax.set_xlabel('x')
+ax.set_ylabel('y')
+#ax.tight_layout()
+ax.set_title('Mesh with Inflow, Outflow, Lower and Upper Walls')
+ax.legend()
+#ax.set_aspect('equal')
+plt.show()
 
 # %%
