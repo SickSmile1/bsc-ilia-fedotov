@@ -14,6 +14,7 @@ from petsc4py import PETSc
 from basix.ufl import element
 
 from pathlib import Path
+from dolfinx import geometry
 from dolfinx.cpp.mesh import to_type, cell_entity_type
 from dolfinx.fem import (Constant, Function, functionspace,
                          assemble_scalar, dirichletbc, form, locate_dofs_topological,
@@ -254,7 +255,7 @@ def calc_with_dolfin(filename,comm):
     bc_inflow = dirichletbc(PETSc.ScalarType(pressure), inflow_dofs, Q)
 
     outflow_dofs = locate_dofs_geometrical(Q, outflow)
-    bc_outflow = dirichletbc(PETSc.ScalarType(pressure-.5), outflow_dofs, Q)
+    bc_outflow = dirichletbc(PETSc.ScalarType(0), outflow_dofs, Q)
     bcu = [bc_noslip]
     bcp = [bc_inflow, bc_outflow]
 
@@ -369,7 +370,12 @@ def calc_with_dolfin(filename,comm):
         # Update variable with solution form this time step
         u_n.x.array[:] = u_.x.array[:]
         p_n.x.array[:] = p_.x.array[:]
-
+        
+        if (i!=0) and (i % int(num_steps/5) == 0) or (i == num_steps - 1):
+            ax = None
+            #a6, a7 = mfl_press(length, mesh, u_n, p_n)
+            plot_para_velo(ax,mesh, u_n, p_n, t, canal_length, pressure)#, a6, a7)
+            #print(a6, a7)
         # Write solutions to file
         vtx_u.write(t)
         vtx_p.write(t)
@@ -439,29 +445,94 @@ def calculate_flow_and_pressure(u, p, V, mesh):
     
     return flow_results, pressure_results, 
 
-canal_length=2.2
-canal_height=.41
-obstacle_center_x=1.1
-obstacle_center_y=.41
-obstacle_radius=.05
+canal_length=4.
+canal_height=1.
+obstacle_center_x=2.
+obstacle_center_y=4.
+obstacle_radius=.3
+pressure = canal_length*8
+
+def plot_para_velo(ax,mesh, u_n,p_n, t, length, pres): #, a6, a7):
+    if MPI.COMM_WORLD.rank == 0:
+        fig, ax = plt.subplots()
+        plt.xlabel('y')
+        plt.ylabel('u_n')
+        plt.title('u_n values at different x-coordinates')
+        tol = 0.05  # Avoid hitting the outside of the domain
+        y = np.linspace(0+tol, length-tol, int(length*100))
+        x = np.linspace(0+tol, length-tol, int(length*100))
+        points = np.zeros((3, int(length*100)))
+        points[1] = y
+        
+        bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
+        cells, cells1, cells2, p_o_p, p_o_p1, p_o_p2 = [], [], [], [], [], []
+        # Find cells whose bounding-box collide with the the points
+        cell_candidates = geometry.compute_collisions_points(bb_tree, points.T)
+        # Choose one of the cells that contains the point
+        colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, points.T)
+        for i, point in enumerate(points.T):
+            if len(colliding_cells.links(i)) > 0:
+                p_o_p.append(point)
+                cells.append(colliding_cells.links(i)[0])
+        
+        points[0] = length/2
+        # Find cells whose bounding-box collide with the the points
+        cell_candidates = geometry.compute_collisions_points(bb_tree, points.T)
+        # Choose one of the cells that contains the point
+        colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, points.T)
+        for i, point in enumerate(points.T):
+            if len(colliding_cells.links(i)) > 0:
+                p_o_p1.append(point)
+                cells1.append(colliding_cells.links(i)[0])
+        
+        points[0] = length-tol
+        # Find cells whose bounding-box collide with the the points
+        cell_candidates = geometry.compute_collisions_points(bb_tree, points.T)
+        # Choose one of the cells that contains the point
+        colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, points.T)
+        for i, point in enumerate(points.T):
+            if len(colliding_cells.links(i)) > 0:
+                p_o_p2.append(point)
+                cells2.append(colliding_cells.links(i)[0])
+        
+        p_o_p = np.array(p_o_p, dtype=np.float64)
+        u_values = u_n.eval(p_o_p, cells)
+        p_values = p_n.eval(p_o_p, cells)
+        
+        p_o_p1 = np.array(p_o_p1, dtype=np.float64)
+        # u_values1 = u_n.eval(p_o_p1, cells1)
+        # p_values1 = p_n.eval(p_o_p1, cells1)
+        # print(u_values.shape)
+        p_o_p2 = np.array(p_o_p2, dtype=np.float64)
+        u_values2 = u_n.eval(p_o_p2, cells2)
+        p_values2 = p_n.eval(p_o_p2, cells2)
+        plt.title("Velocity over x-Axis")
+        plt.plot(p_o_p[:, 1], u_values[:,0], "k", linewidth=2, label="x=0")
+        #plt.plot(p_o_p1[:, 1], u_values1[:,0], "y", linewidth=2, label=r"x=%s"%(length/2))
+        plt.plot(p_o_p2[:, 1], u_values2[:,0], "b", linewidth=2, label=r"x=%s"%(length))
+        plt.legend()
+        plt.xlabel("x")
+        plt.ylabel("Velocity u")
+        # If run in parallel as a python file, we save a plot per processor
+        plt.savefig(f"para_plot/05_{int(pres):d}_{int(t*100):d}.pdf")# u_n_p_canal_{int(pres):d}_{int(t*100):d}.pdf")
 
 if __name__ == "__main__":
     model_rank = 0
     # meshing rate values for disc d and box b 
     d_in, d_out, b_in, b_out = 0.05, 0.25, 0.1, 0.5
 
-    pressure = 8
+    pressure = 8*4
     t = 0
-    T = 6
-    num_steps = 1500
+    T = 2
+    num_steps = 500
     dt = T / num_steps
     comm = MPI.COMM_WORLD
     mpi_example(comm)
-    # if comm.rank == model_rank:
+    if comm.rank == model_rank:
     #     # create mesh files
-    #     init_mesh("r05.msh",canal_length=2.2,canal_height=.41,obstacle_center_x=1.1,
-    #               obstacle_center_y=.41,obstacle_radius=.05,
-    #               d_in=.05,d_out=.25,b_in=.05,b_out=.25)
+        init_mesh("r05.msh",canal_length=4.,canal_height=1.,obstacle_center_x=2.,
+                   obstacle_center_y=1.,obstacle_radius=.3,
+                   d_in=.05,d_out=.25,b_in=.05,b_out=.25)
     #     init_mesh("r1.msh",canal_length=2.2,canal_height=.41,obstacle_center_x=1.1,
     #               obstacle_center_y=.41,obstacle_radius=.1,
     #               d_in=.05,d_out=.25,b_in=.05,b_out=.25)
@@ -475,5 +546,5 @@ if __name__ == "__main__":
 
         # run sims
     u,p,V,mesh = calc_with_dolfin('r05.msh',comm)
-    print(calculate_flow_and_pressure(u,p,V,mesh) )
+    # print(calculate_flow_and_pressure(u,p,V,mesh) )
 
