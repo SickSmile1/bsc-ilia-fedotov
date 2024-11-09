@@ -1,0 +1,54 @@
+{
+  "dtoolcore_version": "3.18.3",
+  "hash_function": "md5sum_hexdigest",
+  "items": {
+    "214d875c82948ae8b9314a1923ea3c78ffc90f6d": {
+      "hash": "e5e16747fc3b9a8f64572c391e73244a",
+      "relpath": "x_at_.5.txt",
+      "size_in_bytes": 408,
+      "utc_timestamp": 1731095649.994762
+    },
+    "25999904c8d1e7de6e31d7303afa93cf7f984b02": {
+      "hash": "6757f3f9abf88d89c150fa55f64188e3",
+      "relpath": "y_at_.5.txt",
+      "size_in_bytes": 408,
+      "utc_timestamp": 1731095649.994762
+    },
+    "31ddf2a3da716202d45d71b7f07b4e83cacca195": {
+      "hash": "02daae11d8315394380ec96faa1e9d89",
+      "relpath": "y_at_0.txt",
+      "size_in_bytes": 561,
+      "utc_timestamp": 1731095649.994762
+    },
+    "81dc6c9a7c7843b46461514a50ab28106ce9ac39": {
+      "hash": "668520f1f5ec943f0f76f3318abbad71",
+      "relpath": "x_at_0.txt",
+      "size_in_bytes": 561,
+      "utc_timestamp": 1731095649.994762
+    },
+    "9f2ca4746d1811bfbf22adc5d51e8f4d5ffbdd16": {
+      "hash": "0815122acd48c12050d45fb1ca425a44",
+      "relpath": "pressure_avg.txt",
+      "size_in_bytes": 510,
+      "utc_timestamp": 1731095649.994762
+    },
+    "b1d35582c6a84ad9c9370849b70c9f2fade03eb0": {
+      "hash": "668520f1f5ec943f0f76f3318abbad71",
+      "relpath": "x_at_1.txt",
+      "size_in_bytes": 561,
+      "utc_timestamp": 1731095649.995763
+    },
+    "d5b5bff586cbed153e6aebecba28dee946c90e5a": {
+      "hash": "e1c58249fd28cba922c16d3457245c8f",
+      "relpath": "massflowrate.txt",
+      "size_in_bytes": 510,
+      "utc_timestamp": 1731095649.993762
+    },
+    "ec6f8049eb7f01790bc53cebe53fb94b8efca5ab": {
+      "hash": "8f8ae4d607db60541031db1adeaf8872",
+      "relpath": "y_at_1.txt",
+      "size_in_bytes": 561,
+      "utc_timestamp": 1731095649.995763
+    }
+  }
+}
