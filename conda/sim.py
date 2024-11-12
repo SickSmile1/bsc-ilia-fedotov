@@ -489,7 +489,7 @@ if __name__ == '__main__':
             p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, r, Ox, tol],
                                                               ["height", "length", "pressure_delta", "simulation_time", 
                                                                "steps", "radius", "obstacle_location_x","meshing_size/tol"]))
-        u_, p_, V, mesh = run_sim(height=1,length=10,pres=8,T=3,num_steps=1000,r=i,file=False,run=2, tol=0.03)
+        u_, p_, V, mesh = run_sim(height=1,length=10,pres=8,T=3,num_steps=3000,r=i,file=False,run=2, tol=0.03)
 
         if MPI.COMM_WORLD.rank == 0:
             mfl, pa = mfl_press(length, mesh, u_, p_) # comm.bcast(lower, root=0)
