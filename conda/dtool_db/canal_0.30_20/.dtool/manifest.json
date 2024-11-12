@@ -1,0 +1,12 @@
+{
+  "dtoolcore_version": "3.18.3",
+  "hash_function": "md5sum_hexdigest",
+  "items": {
+    "d5b5bff586cbed153e6aebecba28dee946c90e5a": {
+      "hash": "1149d8ab88cd4e5b018264b344b008a3",
+      "relpath": "massflowrate.txt",
+      "size_in_bytes": 510,
+      "utc_timestamp": 1731376192.971597
+    }
+  }
+}
