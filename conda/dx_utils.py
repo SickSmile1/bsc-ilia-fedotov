@@ -133,7 +133,7 @@ def write_x_parview(msh,ct,ft, name):
         file.write_meshtags(ct, msh.geometry, geometry_xpath=f"/Xdmf/Domain/Grid[@Name='{name}_ct']/Geometry")
         file.write_meshtags(ft, msh.geometry, geometry_xpath=f"/Xdmf/Domain/Grid[@Name='{name}_ft']/Geometry")
 
-def store_array(arr, name, path, p, db="dtool_db", t=-1):
+def store_array(arr, name, path, p, t, db="dtool_db"):
     """
     Store a numpy array as a text file in a specified directory.
 
@@ -175,8 +175,7 @@ def store_array(arr, name, path, p, db="dtool_db", t=-1):
     """
     if arr.size > 0:
         fpath = path+"/data/"
-        if t!= -1:
-            fpath = path+f"/data/{name:s}_{t:.2f}_/"
+        fpath += f"{name:s}_{t:.2f}/"
         utils.mkdir_parents(fpath)
         np.savetxt(fpath+name+".txt", arr, fmt='%.10e')
     print(f"Dataset '{name:s}' saved at {fpath:s}")
@@ -207,7 +206,6 @@ def init_db(dataset_name, identifier=True, db="dtool_db"):
     if not identifier:
         db_path = db
     utils.mkdir_parents(db_path+"/")
-    print(f"Dataset '{db_path:s}' lala")
     proto = dtoolcore.create_proto_dataset(dataset_name,
                 db_path,
                 readme_content=f"canal_data_{dataset_name:s}",

@@ -67,58 +67,70 @@ def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
     res_loc, res_loc1, res_loc2 = [[],[],[],None], [[],[],[], None], [[],[],[], None]
     res0, res1, res2 = [],[],[]
     #cells, cells1, cells2, p_o_p, p_o_p1, p_o_p2 = [], [], [], [], [], []
-
+    
     def get_points_of_cells(bb_tree, msh, point): #, pop, cell):
         # Find cells whose bounding-box collide with the the points
         cell_candidates = geometry.compute_collisions_points(bb_tree, point.T)
-        # Choose one of the cells that contains the point
         colliding_cells = geometry.compute_colliding_cells(msh, cell_candidates, point.T)
-        pop, cell =  [],[]
-        for i, point in enumerate(points.T):
-            if len(colliding_cells.links(i)) > 0:
-                pop.append(point)
-                cell.append(colliding_cells.links(i)[0])
-        if pop != []:
-            print("not empty!!!!", point[1])
-            pop = np.array(pop, dtype=np.float64)
-            u_val = u_n.eval(pop, cell)
-            p_val = p_n.eval(pop, cell)
-            return [pop, u_val, p_val, rank]
+        # Choose one of the cells that contains the point
+
+        if colliding_cells != None:
+            pop, cell =  [],[]
+            for i, point in enumerate(points.T):
+                if len(colliding_cells.links(i)) > 0:
+                    pop.append(point)
+                    cell.append(colliding_cells.links(i)[0])
+            if pop != []:
+                pop = np.array(pop, dtype=np.float64)
+                u_val = u_n.eval(pop, cell)
+                p_val = p_n.eval(pop, cell)
+                return [pop, u_val, p_val, rank]
         return [None, None, None, None]
 
-    # local_points = np.array_split(points, size, axis=1)[rank]
+    def gather_and_sort(pop, u_val, p_val):
+        # Gather data from all ranks
+        all_pop = mesh.comm.gather(pop, root=0)
+        all_u_val = mesh.comm.gather(u_val, root=0)
+        all_p_val = mesh.comm.gather(p_val, root=0)
+        
+        if rank == 0:
+            comb_pop = [arr for arr in all_pop if arr is not None]
+            comb_u_val = [arr for arr in all_u_val if arr is not None]
+            comb_p_val = [arr for arr in all_p_val if arr is not None]
+            # Combine gathered data
+            combined_pop = np.concatenate(comb_pop)
+            combined_u_val = np.concatenate(comb_u_val)
+            combined_p_val = np.concatenate(comb_p_val)
+    
+            # Create a sorting index based on u_val[:,0]
+            sort_index = np.argsort(combined_u_val[:, 0])
+            # Sort all arrays using this index
+            sorted_pop = combined_pop[sort_index]
+            sorted_u_val = combined_u_val[sort_index]
+            sorted_p_val = combined_p_val[sort_index]
+    
+            return sorted_pop, sorted_u_val, sorted_p_val
+        else:
+            return None, None, None
+    
     # get velocity procile values at x[0] = 0
     res_loc = get_points_of_cells(bb_tree, mesh, points) # , p_o_p, cells)
-    mesh.comm.barrier() 
+    p_o_p, u_values,_ = gather_and_sort(res_loc[0], res_loc[1], res_loc[2])
+    
     # get velocity procile values at x of obstacle
     y2 = np.linspace(0+tol, length-(r+tol), int(length/tol))
     points[1], points[0] = y, Ox
     res_loc1 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p1, cells1)
-    mesh.comm.barrier() 
+    p_o_p1, u_values1,_ = gather_and_sort(res_loc1[0], res_loc1[1], res_loc1[2])
+    
     # get velocity profile at end of canal
     points[1], points[0] = y, length
-    res_loc2 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p2, cells2)
-    mesh.comm.barrier() 
-    #for i in [res_loc[3],res_loc1[3],res_loc2[3]]:
-    #    if i is not None:
-    #        print(f"not empty rank is {int(i):d}\n")
+    res_loc2 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p2, cells2)s
+    p_o_p2, u_values2,_ = gather_and_sort(res_loc2[0], res_loc2[1], res_loc2[2])
     
-    if res_loc[0] is not None:
-        print("broadcasting 0\n")
-        res0 = mesh.comm.bcast(res_loc, root=res_loc[3])
-    mesh.comm.barrier()    
-    if res_loc1[0] is not None:
-        print("broadcasting 1\n")
-        res1 = mesh.comm.bcast(res_loc1, root=res_loc1[3])
-    mesh.comm.barrier()    
-    if res_loc2[0] is not None:
-        print("broadcasting 2\n")
-        res2 = mesh.comm.bcast(res_loc2, root=res_loc2[3])
-    mesh.comm.barrier()
-    
-    #for i in [res0[3],res1[3],res2[3]]:
-    #    if i is not None:
-    #        print(f"not empty rank in res is {int(i):d}\n")
+    #for i in [res_loc,res_loc1,res_loc2]:
+    #    if i[0] is not None:
+    #        print(f"not empty rank is {int(i[3]):d}\n",i[0][:,1], i[1][:,0])
 
     #print("val: ", res1, f" rank is {res0[3]}") #, " val1: ", len(res0[0][:])) #, " val2: ", res[2])
     if ax is not None:
@@ -131,9 +143,11 @@ def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
         ax.set_ylabel("Velocity u")
         # If run in parallel as a python file, we save a plot per processor
         plt.savefig(f"para_plot/u_n_p_{int(r):d}_{int(pres):d}_{int(t*100):d}.pdf") #25_{int(pres):d}_{int(t*100):d}.pdf")
-    
-    #p_o_p1[:, 1], u_values1[:,0], p_o_p2[:, 1], u_values2[:,0]
-    return res0[0][1][:], res0[1][0][:], res1[0][1][:], res1[1][0][:],res2[0][1][:], res2[1][0][:]
+    if rank == 0:
+        return p_o_p[:, 1], u_values[:,0], p_o_p1[:, 1], u_values1[:,0], p_o_p2[:,1], u_values2[:,0]
+    else:
+        return None, None, None, None, None, None
+    #return res0[0][1][:], res0[1][0][:], res1[0][1][:], res1[1][0][:],res2[0][1][:], res2[1][0][:]
 
 def plot_2dmesh(V, mesh, u_n, c):
     topology, cell_types, geo = vtk_mesh(V)
@@ -351,14 +365,12 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
             ax = None
             x1, y1, x2, y2, x3, y3 = plot_para_velo(ax,mesh, u_n, p_n, T, length, pres,Ox, r, tol)
             if comm.rank==0:
-                store_array(mfl, "massflowrate0", pat,p,t)
-                #store_array(mfl[1], "massflowrate1", pat,p,t)
-                #store_array(mfl[2], "massflowrate2", pat,p,t)
+                store_array(mfl, "massflowrate", pat,p,t)
                 # store_array(pa, "pressure_avg", pat,p)           
                 store_array(x1, "x_at_0", pat,p,t)
                 store_array(y1,  "y_at_0", pat,p,t)
-                store_array(x2,  "x_at_.5", pat,p,t)
-                store_array(y2,  "y_at_.5", pat,p,t)
+                store_array(x2,  "x_at_5", pat,p,t)
+                store_array(y2,  "y_at_5", pat,p,t)
                 store_array(x3,  "x_at_1", pat,p,t)
                 store_array(y3,  "y_at_1", pat,p,t)
             dist = np.abs(mfl[0] - mfl_old)
@@ -372,7 +384,9 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
             # Write solutions to fileV
             vtx_u.write(t)
             vtx_p.write(t)
-    p.freeze()
+    if mesh.comm.rank == 0:
+        #plot_2dmesh(V, mesh, u_n, 2)
+        p.freeze()
     # Close xmdf file
     if file:
         vtx_u.close()
@@ -386,36 +400,9 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
     return u_n, p_n, V, mesh
 
 if __name__ == '__main__':
-    #for i in np.linspace(0.05,0.5,19):
-    # fig, ax = plt.subplots(3,1)
-    # plt.xlabel('y')
-    # plt.ylabel('u_n')
-    # plt.title('u_n values at different x-coordinates')
     comm = MPI.COMM_WORLD
-    #if comm.rank == 0:
-        # p, pat = init_db(f"canal_{i:.2f}_3", False)
-        #p, pat = init_db(f"{time.time():.2f}",False)
-        #height, length, pres, T, num_steps, r, Ox, tol = 1,10,20,3,100,.3,5,.03
-        # annotate metadata : height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, run=1, tol=.07):
-    """p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, r, Ox, tol],
-                                                         ["height", "length", "pressure_delta", "simulation_time", 
-                                                           "steps", "radius", "obstacle_location_x","meshing_size/tol"]))"""
-    u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=25,T=.8,num_steps=500,r=.3,file=False,run=2, tol=0.05)
-    #for i in np.linspace(0.05,0.5,19):
+    u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=231,T=.8,num_steps=500,r=.75,file=False,run=2, tol=0.05)
+    #for i in np.linspace(0.025,0.75,19):
     #    for in in np.linspace(2,20, 9)
     #        u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=2000,r=.001,file=False,run=2, tol=0.05)
-    # mfl, pa = mfl_press(comm, length, mesh, u_, p_) 
-    #if comm.rank == 0:
-    # comm.bcast(lower, root=0)
-    #x1, y1, x2, y2, x3, y3 = plot_para_velo(ax[0],mesh, u_, p_, T, length, pres,Ox, r, tol)
-    """ax[1].plot(mfl)
-    ax[2].plot(pa)
-    store_array(mfl, "massflowrate", pat,p)
-    store_array(pa, "pressure_avg", pat,p)           
-    store_array(x1, "x_at_0", pat,p)
-    store_array(y1, "y_at_0", pat,p)
-    store_array(x2, "x_at_.5", pat,p)
-    store_array(y2, "y_at_.5", pat,p)
-    store_array(x3, "x_at_1", pat,p)
-    store_array(y3, "y_at_1", pat,p)
-    p.freeze()"""
+
