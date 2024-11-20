@@ -29,6 +29,18 @@ import time
         gathered_array, gathered_array2 = None, None
 """
 
+def mfl_press_on_boundary(comm,x_max, mesh, mesh_tag, u_n, p):    
+    # Define measures and spatial coordinates
+    ds = Measure("ds", domain=mesh, subdomain_data=mesh_tag)
+    # x = SpatialCoordinate(mesh)
+    n = FacetNormal(mesh)
+    mfl = dot(u_n, n)
+    mfl_expression = form(mfl*ds)
+    mfl_local = assemble_scalar(form(mfl_expression))
+    # mass_flow = mesh.comm.allreduce(mfl_local, op=MPI.SUM)
+    print("mass_flow ds: ",mfl_local) # , "pressure: ", pressure_avg)
+    return mfl, None
+
 def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
     # Extract the normal component of velocity (u_x in 2D)
     u_sub = u_n.sub(0)
@@ -39,8 +51,8 @@ def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
     tol = 5e-2
     mfl, mass_flow, p_loc, pressure_avg = np.array([]), None, None, np.array([])
     #if dx.subdomain_data() != 0:
-    for i in np.array([0+2*tol, x_max/2, x_max-2*tol]):
-        slice_condition = conditional(ge(x[0], i-tol), 1.0, 0.0) * conditional(le(x[0], i+tol), 1.0, 0.0)
+    for i in np.array([0+tol, x_max/2, x_max-tol]):
+        slice_condition = conditional(ge(x[0], i-tol/2), 1.0, 0.0) * conditional(le(x[0], i+tol/2), 1.0, 0.0)
         # Calculate mass flow rate at the current slice
         mass_flow_local = assemble_scalar(form(u_sub *slice_condition* dx))
         mass_flow = mesh.comm.allreduce(mass_flow_local, op=MPI.SUM)
@@ -51,7 +63,7 @@ def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
         pressure_avg = np.append(pressure_avg, p_loc)
     #print(mass_flow)
     if mesh.comm.rank==0:
-        print("mass_flow: ",mfl) # , "pressure: ", pressure_avg)
+        print("mass_flow dx: ",mfl) # , "pressure: ", pressure_avg)
     return mfl, pressure_avg
 
 def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
@@ -309,6 +321,7 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
         p_n.x.array[:] = p_.x.array[:]
         if (i !=0 and i!=1 and (i%200)==0): # and comm.rank == 0:
             mfl, _ = mfl_press(comm,length, mesh, facet_tag, u_n, p_n)
+            mfl2, _ = mfl_press_on_boundary(comm,length, mesh, facet_tag, u_n, p_n)
             dist = np.abs(mfl[0] - mfl_old)
             mfl_old = mfl[0]
             print(t, "dist: ",dist)
@@ -334,33 +347,6 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
     return u_n, p_n, V, mesh
 
 if __name__ == '__main__':
-    #for i in np.linspace(0.05,0.5,19):
-    fig, ax = plt.subplots(3,1)
-    plt.xlabel('y')
-    plt.ylabel('u_n')
-    plt.title('u_n values at different x-coordinates')
     comm = MPI.COMM_WORLD
-    if comm.rank == 0:
-        # p, pat = init_db(f"canal_{i:.2f}_3", False)
-        #p, pat = init_db(f"{time.time():.2f}",False)
-        height, length, pres, T, num_steps, r, Ox, tol = 1,10,20,3,100,.3,5,.03
-        # annotate metadata : height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, run=1, tol=.07):
-        """p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, r, Ox, tol],
-                                                          ["height", "length", "pressure_delta", "simulation_time", 
-                                                           "steps", "radius", "obstacle_location_x","meshing_size/tol"]))"""
-    u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=8,T=.8,num_steps=2000,r=.001,file=False,run=2, tol=0.05)
-    # mfl, pa = mfl_press(comm, length, mesh, u_, p_) 
-    #if comm.rank == 0:
-    # comm.bcast(lower, root=0)
-    #x1, y1, x2, y2, x3, y3 = plot_para_velo(ax[0],mesh, u_, p_, T, length, pres,Ox, r, tol)
-    """ax[1].plot(mfl)
-    ax[2].plot(pa)
-    store_array(mfl, "massflowrate", pat,p)
-    store_array(pa, "pressure_avg", pat,p)           
-    store_array(x1, "x_at_0", pat,p)
-    store_array(y1, "y_at_0", pat,p)
-    store_array(x2, "x_at_.5", pat,p)
-    store_array(y2, "y_at_.5", pat,p)
-    store_array(x3, "x_at_1", pat,p)
-    store_array(y3, "y_at_1", pat,p)
-    p.freeze()"""
+    for r in np.linspace(.1,.7,6):
+        u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=150,T=1,num_steps=500,r=r,file=False,run=2, tol=0.05)

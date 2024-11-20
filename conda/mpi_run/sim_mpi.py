@@ -402,10 +402,9 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
 if __name__ == '__main__':
     comm = MPI.COMM_WORLD
     #u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=231,T=.8,num_steps=500,r=.75,file=False,run=2, tol=0.05)
-    for r in np.linspace(0.01,0.75,74):
-        for p in np.linspace(2,230, 115):
-            if r < 0.0112 and p<107:
-                continue
-            else:
-                u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=800,r=r,file=False,run=2, tol=0.04)
+    #for r in np.linspace(0.58,0.75,3):
+    #    for p in np.linspace(2,230, 15):
+    #        u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=800,r=r,file=False,run=2, tol=0.05)
+    u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=213.71,T=.8,num_steps=800,r=.01,file=False,run=2, tol=0.05)
+    u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=230,T=.8,num_steps=800,r=.01,file=False,run=2, tol=0.05)
 

@@ -1,0 +1,11 @@
+1. kennlinie bauteil
+  - volumenfluss/druck graph
+  - unitless, bzw. im plot erläutern
+  - unterschiedlichen Druck ausprobieren und plotten
+  - länge zu höhe aus paper(verhältniss), nur 1 länge für plotts
+3 start writing in overleaf!
+
+Johannes
+1. paraview??
+2. script
+3. write gitter, dann zeitschritte
