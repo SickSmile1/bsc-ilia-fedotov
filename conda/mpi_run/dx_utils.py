@@ -7,9 +7,152 @@ import time
 import numpy as np
 import json
 
-
+from dolfinx import geometry
 from dolfinx.io import VTXWriter, gmshio, XDMFFile
+from dolfinx.fem import assemble_scalar, form
+from dolfinx.fem.petsc import assemble_matrix, assemble_vector, apply_lifting, create_vector, set_bc
+from dolfinx.plot import vtk_mesh
+from ufl import Measure, SpatialCoordinate, conditional, ge, le
 import gmsh
+import pyvista
+
+def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
+    # Extract the normal component of velocity (u_x in 2D)
+    u_sub = u_n.sub(0)
+    # Define measures and spatial coordinates
+    dx = Measure("dx", domain=mesh) #, subdomain_data=mesh_tag)
+    x = SpatialCoordinate(mesh)
+    tol = 5e-2
+    mfl, mass_flow, p_loc, pressure_avg = np.array([]), None, None, np.array([])
+    for i in np.array([0+2*tol, x_max/2, x_max-2*tol]):
+        slice_condition = conditional(ge(x[0], i-tol), 1.0, 0.0) * conditional(le(x[0], i+tol), 1.0, 0.0)
+        # Calculate mass flow rate at the current slice
+        mass_flow_local = assemble_scalar(form(u_sub *slice_condition* dx))
+        mass_flow = mesh.comm.allreduce(mass_flow_local, op=MPI.SUM)
+        mfl = np.append(mfl, mass_flow)
+        # Calculate average pressure at the current slice
+        pressure_loc = assemble_scalar(form(p *slice_condition* dx))
+        p_loc = mesh.comm.allreduce(pressure_loc, op=MPI.SUM)
+        pressure_avg = np.append(pressure_avg, p_loc)
+    if mesh.comm.rank==0:
+        print("mass_flow: ",mfl) # , "pressure: ", pressure_avg)
+    return mfl, pressure_avg
+
+def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
+    rank = mesh.comm.Get_rank()
+    y = np.linspace(0+tol, length, int(length/tol))
+    points = np.zeros((3, int(length/tol)))
+    points[1] = y
+    points[0] = 0
+    
+    bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
+    res_loc, res_loc1, res_loc2 = [[],[],[],None], [[],[],[], None], [[],[],[], None]
+    
+    def get_points_of_cells(bb_tree, msh, point): #, pop, cell):
+        # Find cells whose bounding-box collide with the the points
+        cell_candidates = geometry.compute_collisions_points(bb_tree, point.T)
+        colliding_cells = geometry.compute_colliding_cells(msh, cell_candidates, point.T)
+        # Choose one of the cells that contains the point
+
+        if colliding_cells != None:
+            pop, cell =  [],[]
+            for i, point in enumerate(points.T):
+                if len(colliding_cells.links(i)) > 0:
+                    pop.append(point)
+                    cell.append(colliding_cells.links(i)[0])
+            if pop != []:
+                pop = np.array(pop, dtype=np.float64)
+                u_val = u_n.eval(pop, cell)
+                p_val = p_n.eval(pop, cell)
+                return [pop, u_val, p_val, rank]
+        return [None, None, None, None]
+
+    def gather_and_sort(pop, u_val, p_val):
+        # Gather data from all ranks
+        all_pop = mesh.comm.gather(pop, root=0)
+        all_u_val = mesh.comm.gather(u_val, root=0)
+        all_p_val = mesh.comm.gather(p_val, root=0)
+        
+        if rank == 0:
+            comb_pop = [arr for arr in all_pop if arr is not None]
+            comb_u_val = [arr for arr in all_u_val if arr is not None]
+            comb_p_val = [arr for arr in all_p_val if arr is not None]
+            # Combine gathered data
+            combined_pop = np.concatenate(comb_pop)
+            combined_u_val = np.concatenate(comb_u_val)
+            combined_p_val = np.concatenate(comb_p_val)
+    
+            # Create a sorting index based on u_val[:,0]
+            sort_index = np.argsort(combined_u_val[:, 0])
+            # Sort all arrays using this index
+            sorted_pop = combined_pop[sort_index]
+            sorted_u_val = combined_u_val[sort_index]
+            sorted_p_val = combined_p_val[sort_index]
+    
+            return sorted_pop, sorted_u_val, sorted_p_val
+        else:
+            return None, None, None
+    
+    # get velocity procile values at x[0] = 0
+    res_loc = get_points_of_cells(bb_tree, mesh, points) # , p_o_p, cells)
+    p_o_p, u_values,_ = gather_and_sort(res_loc[0], res_loc[1], res_loc[2])
+    
+    # get velocity procile values at x of obstacle
+    y2 = np.linspace(0+tol, length-(r+tol), int(length/tol))
+    points[1], points[0] = y, Ox
+    res_loc1 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p1, cells1)
+    p_o_p1, u_values1,_ = gather_and_sort(res_loc1[0], res_loc1[1], res_loc1[2])
+    
+    # get velocity profile at end of canal
+    points[1], points[0] = y, length
+    res_loc2 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p2, cells2)s
+    p_o_p2, u_values2,_ = gather_and_sort(res_loc2[0], res_loc2[1], res_loc2[2])
+    
+    #for i in [res_loc,res_loc1,res_loc2]:
+    #    if i[0] is not None:
+    #        print(f"not empty rank is {int(i[3]):d}\n",i[0][:,1], i[1][:,0])
+
+    #print("val: ", res1, f" rank is {res0[3]}") #, " val1: ", len(res0[0][:])) #, " val2: ", res[2])
+    if ax is not None:
+        ax.set_title("Velocity over x-Axis")
+        ax.plot(p_o_p[:, 1], u_values[:,0], "k", linewidth=2, label="x=0")
+        ax.plot(p_o_p1[:, 1], u_values1[:,0], "y", linewidth=2, label=r"x=%s"%(Ox))
+        ax.plot(p_o_p2[:, 1], u_values2[:,0], "b", linewidth=2, label=r"x=%s"%(length))
+        ax.legend()
+        ax.set_xlabel("x")
+        ax.set_ylabel("Velocity u")
+        # If run in parallel as a python file, we save a plot per processor
+        plt.savefig(f"para_plot/u_n_p_{int(r):d}_{int(pres):d}_{int(t*100):d}.pdf") #25_{int(pres):d}_{int(t*100):d}.pdf")
+    if rank == 0:
+        return p_o_p[:, 1], u_values[:,0], p_o_p1[:, 1], u_values1[:,0], p_o_p2[:,1], u_values2[:,0]
+    else:
+        return None, None, None, None, None, None
+    #return res0[0][1][:], res0[1][0][:], res1[0][1][:], res1[1][0][:],res2[0][1][:], res2[1][0][:]
+
+def plot_2dmesh(V, mesh, u_n, c):
+    topology, cell_types, geo = vtk_mesh(V)
+    values = np.zeros((geo.shape[0], 3), dtype=np.float64)
+    values[:, :len(u_n)] = u_n.x.array.real.reshape((geo.shape[0], len(u_n)))
+    
+    # Create a point cloud of glyphs
+    function_grid = pyvista.UnstructuredGrid(topology, cell_types, geo)
+    function_grid["u"] = values
+    glyphs = function_grid.glyph(orient="u", factor=0.2)
+    
+    # Create a pyvista-grid for the mesh
+    grid = pyvista.UnstructuredGrid(*vtk_mesh(mesh, mesh.topology.dim))
+    
+    # Create plotter
+    plotter = pyvista.Plotter(off_screen=True)
+    plotter.add_mesh(grid, style="wireframe", color="k")
+    plotter.add_mesh(glyphs)
+    plotter.view_xy()
+    #if not pyvista.OFF_SCREEN:
+    #    plotter.show()
+    #    plotter.screenshot(f"canal_{c:d}.png")
+    #f"para_plot/u_n_p_canal_test")#{int(pres):d}
+    fig_as_array = plotter.screenshot(f"velocity_graph_{c:.2f}.png")
+    plotter.close()
 
 def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
     """
@@ -175,9 +318,11 @@ def store_array(arr, name, path, p, t, db="dtool_db"):
     """
     if arr.size > 0:
         fpath = path+"/data/"
-        fpath += f"{name:s}_{t:.2f}/"
+        # fpath += f"{name:s}_{t:.2f}/"
         utils.mkdir_parents(fpath)
         np.savetxt(fpath+name+".txt", arr, fmt='%.10e')
+    else:
+        print("DEBUG: dx_utils/store_array()\nArray size 0 or None!")
     print(f"Dataset '{name:s}' saved at {fpath:s}")
 
 def init_db(dataset_name, identifier=True, db="dtool_db"):
