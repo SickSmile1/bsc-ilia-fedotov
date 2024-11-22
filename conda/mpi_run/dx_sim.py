@@ -13,17 +13,22 @@ import numpy as np
 from dx_utils import (create_obst, write_x_parview, store_array, init_db,
                     write_values_to_json, mfl_press, plot_para_velo, plot_2dmesh)
 
-def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, run=1, tol=.05):
+def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05):
+    # set obstacle location to center
     Ox = length/2
-    if run==0:
+    # disable saving to .bp file
+    file =  False
+    """if run==0:
+        # this was the initial run to see reference values
         mesh = create_rectangle(comm,[[0,0], [length, height]],[int(length*25),int(height*25)])
     if run == 1:
-        mesh = create_unit_square(comm, 100, 100)
-    if run == 2:
-        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = create_obst(comm,height, length, r, Ox, tol)
-    else:
-        int("DEBUG:run_sim\nMesh could not be created!")
-        return 0
+        # this option is the dolfinx intendet way of creating a mesh,
+        # problems may arise with boundary conditions, if set from "locate_dofs_topological" 
+        # as problems remained unresolved run==2 was created
+        mesh = create_unit_square(comm, 100, 100)"""
+    
+    # manually create mesh
+    mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = create_obst(comm,height, length, r, Ox, tol)
     
     debug = False
     t = 0
@@ -41,8 +46,6 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
     q = TestFunction(Q)
 
     fdim = mesh.topology.dim - 1
-
-    #write_x_parview(mesh,ct,ft, "my_mesh")
 
     wall_dofs = locate_dofs_topological(V, fdim, ft.find(upper_wall_marker))
     u_noslip = np.array((0,) * mesh.geometry.dim, dtype=PETSc.ScalarType)
@@ -153,12 +156,14 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
 
     values = np.full(boundary_facets.shape, 1, dtype=np.int32)
     facet_tag = meshtags(mesh, mesh.topology.dim - 1, boundary_facets, values)
-    # add a simple plot output 
+    # add a simple plot output
+
+    # this value can be used to break the run if the massflowrate change falls below 3e-3 in the loop
     mfl_old = 0    
    
-    if comm.rank==0:
-        p, pat = init_db(f"parametric_canal_{r:.2f}_{pres:.1f}", False)
-
+    if comm.rank==0 and save:
+        # initialize dtool dataset
+        p, pat = init_db(f"parametric2_canal_{r:.2f}_{pres:.1f}", False)
         p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, r, Ox, tol],
                                                          ["height", "length", "pressure_delta", "simulation_time", 
                                                            "steps", "radius", "obstacle_location_x","meshing_size/tol"]))
@@ -166,6 +171,7 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
     if debug:
         print("<< starting loop >>")
     for i in range(num_steps):
+        # code from https://jsdokken.com/dolfinx-tutorial/chapter2/ns_code1.html
         # Update current time step
         t += dt
   
@@ -200,12 +206,14 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
         # Update variable with solution form this time step
         u_n.x.array[:] = u_.x.array[:]
         p_n.x.array[:] = p_.x.array[:]
+
+        # write data to dataset
         if (i !=0 and i!=1 and (i%100)==0): # and comm.rank == 0:
             mfl, _ = mfl_press(comm,length, mesh, facet_tag, u_n, p_n)
             ax = None
             x1, y1, x2, y2, x3, y3 = plot_para_velo(ax,mesh, u_n, p_n, T, length, pres,Ox, r, tol)
-            if comm.rank==0:
-                plot_2dmesh(V, mesh, u_n, t)
+            if comm.rank==0 and save:
+                # plot_2dmesh(V, mesh, u_n, t)
                 store_array(mfl, "massflowrate", pat,p,t)
                 # store_array(pa, "pressure_avg", pat,p)           
                 store_array(x1, "x_at_0", pat,p,t)
@@ -225,7 +233,7 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, file=False, 
             # Write solutions to fileV
             vtx_u.write(t)
             vtx_p.write(t)
-    if mesh.comm.rank == 0:
+    if mesh.comm.rank == 0 and save:
         #plot_2dmesh(V, mesh, u_n, 2)
         p.freeze()
     # Close xmdf file

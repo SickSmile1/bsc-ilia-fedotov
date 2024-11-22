@@ -8,29 +8,23 @@ from dx_sim import run_sim
 import argparse
 
 
-def parse_range(arg):
-    try:
-        start, end, step = map(float, arg.split(','))
-        return start, end, int(step)
-    except ValueError:
-        raise argparse.ArgumentTypeError("Range must be start,end,step")
-
-
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run simulation with specified parameters or in a loop.")
     parser.add_argument("--mode", choices=["single", "loop"], required=True, help="Run mode: single run or loop")
     parser.add_argument("--radius", type=float, help="Radius for single run")
     parser.add_argument("--length", type=float, help="Length for single run")
+    parser.add_argument("--save", type=bool, help="Save data to dtool db")
     parser.add_argument("--pressure", type=float, help="Pressure for single run")
-    parser.add_argument("--radius_range", type=parse_range, help="Radius range for loop (start,end,steps)")
-    parser.add_argument("--pressure_range", type=parse_range, help="Pressure range for loop (start,end,steps)")
+    parser.add_argument("--radius_range", nargs='+',type=float, help="Radius range for loop (start,end,steps)")
+    parser.add_argument("--pressure_range", nargs='+', type=int, help="Pressure range for loop (start,end,steps)")
     parser.add_argument("--info", action="store_true", help="Show information about parameters without running the simulation")
     return parser.parse_args()
 
-def run_loop_simulation(comm, radius_range, pressure_range):
+def run_loop_simulation(comm, radius_range, pressure_range, save):
     for r in radius_range:
         for p in pressure_range:
-            run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=800,r=r)
+            # parameters: (comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05):
+            run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=800,r=r,save=save,tol=.04)
     """
     Run simulations for a range of radii and pressures.
 
@@ -62,19 +56,29 @@ def show_parameter_info():
 if __name__ == '__main__':
     args = parse_arguments()
     comm = MPI.COMM_WORLD
+    if args.save is None:
+        save = False
+    else:
+        save = True
 
     if args.mode == "single":
         if args.radius is None or args.length is None or args.pressure is None:
             raise ValueError("For single mode, radius, length, and pressure must be specified.")
         u_, p_, V, mesh = run_sim(comm, height=1, length=args.length, pres=args.pressure, T=.8, num_steps=800, 
-                                  r=args.radius, file=False, run=2, tol=.05)
+                                  r=args.radius, save=save, tol=.04)
+
     elif args.mode == "loop":
-        if any(arg is None for arg in [args.radius_start, args.radius_end, args.radius_steps, 
-                                       args.pressure_start, args.pressure_end, args.pressure_steps]):
-            raise ValueError("For loop mode, all radius and pressure range parameters must be specified.")
-        radius_range = np.linspace(args.radius_start, args.radius_end, args.radius_steps)
-        pressure_range = np.linspace(args.pressure_start, args.pressure_end, args.pressure_steps)
-        run_loop_simulation(comm, radius_range, pressure_range)
+        if any(arg is None for arg in [args.radius_range, args.pressure_range,args.length]):
+            raise ValueError("For loop mode, length and all radius and pressure range parameters must be specified.")
+        if len(args.radius_range) == 3:
+            start, end, step = args.radius_range
+            radius_range = np.linspace(start, end, int(step))
+        if len(args.pressure_range) == 3:
+            start, end, step = args.pressure_range
+            pressure_range = np.linspace(start, end, step)
+        else:
+            print("Provide start stop end values for pressure and radius!")
+        run_loop_simulation(comm, radius_range, pressure_range, save)
     #u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=231,T=.8,num_steps=500,r=.75,file=False,run=2, tol=0.05)
     #for r in np.linspace(0.58,0.75,3):
     #    for p in np.linspace(2,230, 15):

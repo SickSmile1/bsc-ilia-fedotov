@@ -318,7 +318,7 @@ def store_array(arr, name, path, p, t, db="dtool_db"):
     """
     if arr.size > 0:
         fpath = path+"/data/"
-        # fpath += f"{name:s}_{t:.2f}/"
+        fpath += f"{name:s}_{t:.2f}/"
         utils.mkdir_parents(fpath)
         np.savetxt(fpath+name+".txt", arr, fmt='%.10e')
     else:
