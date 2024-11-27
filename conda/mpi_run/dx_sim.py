@@ -212,8 +212,9 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
             mfl, _ = mfl_press(comm,length, mesh, facet_tag, u_n, p_n)
             ax = None
             x1, y1, x2, y2, x3, y3 = plot_para_velo(ax,mesh, u_n, p_n, T, length, pres,Ox, r, tol)
+            plot_2dmesh(V, mesh, u_n, t)
             if comm.rank==0 and save:
-                # plot_2dmesh(V, mesh, u_n, t)
+                plot_2dmesh(V, mesh, u_n, t)
                 store_array(mfl, "massflowrate", pat,p,t)
                 # store_array(pa, "pressure_avg", pat,p)           
                 store_array(x1, "x_at_0", pat,p,t)

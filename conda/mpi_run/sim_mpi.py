@@ -13,18 +13,19 @@ def parse_arguments():
     parser.add_argument("--mode", choices=["single", "loop"], required=True, help="Run mode: single run or loop")
     parser.add_argument("--radius", type=float, help="Radius for single run")
     parser.add_argument("--length", type=float, help="Length for single run")
-    parser.add_argument("--save", type=bool, help="Save data to dtool db")
+    parser.add_argument("--save", type=int, help="Save data to dtool db")
+    parser.add_argument("--tol", type=float, help="Mesh raster size")
     parser.add_argument("--pressure", type=float, help="Pressure for single run")
     parser.add_argument("--radius_range", nargs='+',type=float, help="Radius range for loop (start,end,steps)")
     parser.add_argument("--pressure_range", nargs='+', type=int, help="Pressure range for loop (start,end,steps)")
     parser.add_argument("--info", action="store_true", help="Show information about parameters without running the simulation")
     return parser.parse_args()
 
-def run_loop_simulation(comm, radius_range, pressure_range, save):
+def run_loop_simulation(comm, radius_range, pressure_range, save, tol):
     for r in radius_range:
         for p in pressure_range:
             # parameters: (comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05):
-            run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=800,r=r,save=save,tol=.04)
+            run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=800,r=r,save=save,tol=tol)
     """
     Run simulations for a range of radii and pressures.
 
@@ -56,16 +57,21 @@ def show_parameter_info():
 if __name__ == '__main__':
     args = parse_arguments()
     comm = MPI.COMM_WORLD
-    if args.save is None:
-        save = False
-    else:
+    if args.save == 1:
         save = True
-
+    else:
+        save = False
+    if args.tol is None:
+        tol = 0.3
+    else:
+        tol = args.tol
+    print("save",save)
+    print("tol",tol)
     if args.mode == "single":
         if args.radius is None or args.length is None or args.pressure is None:
             raise ValueError("For single mode, radius, length, and pressure must be specified.")
         u_, p_, V, mesh = run_sim(comm, height=1, length=args.length, pres=args.pressure, T=.8, num_steps=800, 
-                                  r=args.radius, save=save, tol=.04)
+                                  r=args.radius, save=save, tol=tol)
 
     elif args.mode == "loop":
         if any(arg is None for arg in [args.radius_range, args.pressure_range,args.length]):
@@ -78,7 +84,7 @@ if __name__ == '__main__':
             pressure_range = np.linspace(start, end, step)
         else:
             print("Provide start stop end values for pressure and radius!")
-        run_loop_simulation(comm, radius_range, pressure_range, save)
+        run_loop_simulation(comm, radius_range, pressure_range, save, tol)
     #u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=231,T=.8,num_steps=500,r=.75,file=False,run=2, tol=0.05)
     #for r in np.linspace(0.58,0.75,3):
     #    for p in np.linspace(2,230, 15):

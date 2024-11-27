@@ -151,7 +151,8 @@ def plot_2dmesh(V, mesh, u_n, c):
     #    plotter.show()
     #    plotter.screenshot(f"canal_{c:d}.png")
     #f"para_plot/u_n_p_canal_test")#{int(pres):d}
-    fig_as_array = plotter.screenshot(f"velocity_graph_{c:.2f}.png")
+    rank = mesh.comm.rank
+    fig_as_array = plotter.screenshot(f"velocity_graph_{c:.2f}_{rank:d}.png")
     plotter.close()
 
 def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
