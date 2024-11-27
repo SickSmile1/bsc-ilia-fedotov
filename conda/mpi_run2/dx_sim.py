@@ -237,7 +237,7 @@ def run_sim(comm, height=.41, length=2.2,pres=8,T=8,num_steps=500,r=0, save=Fals
             mfl = mfl_press(comm,length, mesh, facet_tag, u_n)
             ax = None
             x1, y1, x2, y2, x3, y3 = plot_para_velo(ax,mesh, u_, T, length, pres,Ox, r, tol)
-            plot_2dmesh(V, mesh, u_, t)
+            #plot_2dmesh(V, mesh, u_, t)
             
             p_front = None
             if len(front_cells) > 0:
@@ -248,8 +248,9 @@ def run_sim(comm, height=.41, length=2.2,pres=8,T=8,num_steps=500,r=0, save=Fals
                 p_back = p_.eval(points[1], back_cells[:1])
             p_back = mesh.comm.gather(p_back, root=0)
 
+            #if save:
+                # plot_2dmesh(V, mesh, u_n, t)
             if comm.rank==0 and save:
-                plot_2dmesh(V, mesh, u_n, t)
                 store_array(mfl, "massflowrate", pat,p,t)
                 # store_array(pa, "pressure_avg", pat,p)           
                 store_array(x1, "x_at_0", pat,p,t)
@@ -281,6 +282,7 @@ def run_sim(comm, height=.41, length=2.2,pres=8,T=8,num_steps=500,r=0, save=Fals
             vtx_p.write(t)
     if mesh.comm.rank == 0 and save:
         #plot_2dmesh(V, mesh, u_n, 2)
+        store_array(p_diff,  "pressure", pat,p,0)
         p.freeze()
     # Close xmdf file
     if file:

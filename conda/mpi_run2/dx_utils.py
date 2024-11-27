@@ -83,7 +83,7 @@ def plot_para_velo(ax, mesh, u_n, t, length, pres, Ox, r, tol):
     
             return sorted_pop, sorted_u_val
         else:
-            return None, None, None
+            return None, None
     
     # get velocity procile values at x[0] = 0
     res_loc = get_points_of_cells(bb_tree, mesh, points) # , p_o_p, cells)
@@ -122,30 +122,48 @@ def plot_para_velo(ax, mesh, u_n, t, length, pres, Ox, r, tol):
     #return res0[0][1][:], res0[1][0][:], res1[0][1][:], res1[1][0][:],res2[0][1][:], res2[1][0][:]
 
 def plot_2dmesh(V, mesh, u_n, c):
-    topology, cell_types, geo = vtk_mesh(V)
-    values = np.zeros((geo.shape[0], 3), dtype=np.float64)
-    values[:, :len(u_n)] = u_n.x.array.real.reshape((geo.shape[0], len(u_n)))
-    
-    # Create a point cloud of glyphs
-    function_grid = pyvista.UnstructuredGrid(topology, cell_types, geo)
-    function_grid["u"] = values
-    glyphs = function_grid.glyph(orient="u", factor=0.2)
-    
-    # Create a pyvista-grid for the mesh
-    grid = pyvista.UnstructuredGrid(*vtk_mesh(mesh, mesh.topology.dim))
-    
-    # Create plotter
-    plotter = pyvista.Plotter(off_screen=True)
-    plotter.add_mesh(grid, style="wireframe", color="k")
-    plotter.add_mesh(glyphs)
-    plotter.view_xy()
-    #if not pyvista.OFF_SCREEN:
-    #    plotter.show()
-    #    plotter.screenshot(f"canal_{c:d}.png")
-    #f"para_plot/u_n_p_canal_test")#{int(pres):d}
-    rank = mesh.comm.rank
-    fig_as_array = plotter.screenshot(f"velocity_graph_{c:.2f}_{rank:d}.png")
-    plotter.close()
+    topology, cell_types, geometry = vtk_mesh(V)
+    num_cells_local = mesh.topology.index_map(mesh.topology.dim).size_local
+    num_dofs_local = V.dofmap.index_map.size_local*V.dofmap.index_map_bs
+    num_dofs_per_cell = topology[0]
+    topology_dofs = (np.arange(len(topology)) % (num_dofs_per_cell+1)) != 0
+    global_dofs = V.dofmap.index_map.local_to_global(topology[topology_dofs].copy())
+    topology[topology_dofs] = global_dofs
+
+    values = np.zeros((geometry.shape[0], 3), dtype=np.float64)
+    values[:, :len(u_n)] = u_n.x.array.real.reshape((geometry.shape[0], len(u_n))) 
+    print("here")
+    grid = pyvista.UnstructuredGrid(
+        topology,
+        cell_types,
+        geometry
+    )
+    grid.point_data["u"] = values
+    # glyphs = grid.glyph(orient="u", factor=0.08)
+    print("here1")
+
+    grid_gath = mesh.comm.gather(grid, root=0)
+
+    print("here2")
+    if mesh.comm.rank==0:
+        grids = pyvista.MultiBlock()
+        print("here3")
+        for i in grid_gath:
+            grids.append(i)
+        #glyphs = grids.glyph(orient="u",factor=0.08)
+
+        print("here4")
+        plotter = pyvista.Plotter(off_screen=True)
+        plotter.add_mesh(grid, style="wireframe", color="k")
+        #plotter.add_mesh(glyphs)
+        plotter.view_xy()
+#if not pyvista.OFF_SCREEN:
+#    plotter.show()
+#    plotter.screenshot(f"canal_{c:d}.png")
+#f"para_plot/u_n_p_canal_test")#{int(pres):d}
+        fig_as_array = plotter.screenshot(f"velocity_graph_{c:.2f}.png")
+        plotter.close()
+    mesh.comm.Barrier()
 
 def create_obst(comm,H=.41, L=2.2,r=.3, Ox=1.5, lc=.07):
     """
@@ -260,7 +278,7 @@ def create_obst(comm,H=.41, L=2.2,r=.3, Ox=1.5, lc=.07):
         # gmsh.option.setNumber("Mesh.RecombineAll", 1)
         # gmsh.option.setNumber("Mesh.SubdivisionAlgorithm", 1)
         gmsh.model.mesh.generate(2)
-        gmsh.write("my_mesh.msh")
+        # gmsh.write("my_mesh.msh")
 
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
@@ -323,7 +341,7 @@ def store_array(arr, name, path, p, t, db="dtool_db"):
         np.savetxt(fpath+name+".txt", arr, fmt='%.10e')
     else:
         print("DEBUG: dx_utils/store_array()\nArray size 0 or None!")
-    print(f"Dataset '{name:s}' saved at {fpath:s}")
+    # print(f"Dataset '{name:s}' saved at {fpath:s}")
 
 def init_db(dataset_name, identifier=True, db="dtool_db"):
     """

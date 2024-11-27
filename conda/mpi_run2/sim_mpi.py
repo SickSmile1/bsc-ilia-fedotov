@@ -21,11 +21,24 @@ def parse_arguments():
     parser.add_argument("--info", action="store_true", help="Show information about parameters without running the simulation")
     return parser.parse_args()
 
-def run_loop_simulation(comm, radius_range, pressure_range, save, tol):
+def show_parameter_info():
+    print("## Parameter Information")
+    print("This script accepts the following parameters for single run:")
+    print("  --radius: The radius for the simulation (float)")
+    print("  --length: The length for the simulation (float)")
+    print("  --pressure: The pressure for the simulation (float)")
+    print("\nExample usage:")
+    print("  python your_script.py --radius 0.5 --length 10 --pressure 100")
+    print("This script accepts the following parameters for loop run:")
+    print("  --length: The length for the simulation (float)")
+    print("  --radius_range: The radius for the simulation (start,end,step)")
+    print("  --pressure_range: The pressure for the simulation (start,end,step)")
+
+def run_loop_simulation(comm, length, radius_range, pressure_range, save, tol):
     for r in radius_range:
         for p in pressure_range:
             # parameters: (comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05):
-            run_sim(comm, height=1,length=10,pres=p,T=8,num_steps=800,r=r,save=save,tol=tol)
+            run_sim(comm, height=.41,length=length,pres=p,T=8,num_steps=800,r=r,save=save,tol=tol)
     """
     Run simulations for a range of radii and pressures.
 
@@ -40,19 +53,6 @@ def run_loop_simulation(comm, radius_range, pressure_range, save, tol):
     :type pressure_range: numpy.ndarray
     """
 
-def show_parameter_info():
-    print("## Parameter Information")
-    print("This script accepts the following parameters for single run:")
-    print("  --radius: The radius for the simulation (float)")
-    print("  --length: The length for the simulation (float)")
-    print("  --pressure: The pressure for the simulation (float)")
-    print("\nExample usage:")
-    print("  python your_script.py --radius 0.5 --length 10 --pressure 100")
-    print("This script accepts the following parameters for loop run:")
-    print("  --length: The length for the simulation (float)")
-    print("  --radius_range: The radius for the simulation (start,end,step)")
-    print("  --pressure_range: The pressure for the simulation (start,end,step)")
-
 
 if __name__ == '__main__':
     args = parse_arguments()
@@ -65,8 +65,7 @@ if __name__ == '__main__':
         tol = 0.3
     else:
         tol = args.tol
-    print("save",save)
-    print("tol",tol)
+
     if args.mode == "single":
         if args.radius is None or args.length is None or args.pressure is None:
             raise ValueError("For single mode, radius, length, and pressure must be specified.")
@@ -84,7 +83,7 @@ if __name__ == '__main__':
             pressure_range = np.linspace(start, end, step)
         else:
             print("Provide start stop end values for pressure and radius!")
-        run_loop_simulation(comm, radius_range, pressure_range, save, tol)
+        run_loop_simulation(comm, args.length, radius_range, pressure_range, save, tol)
     #u_, p_, V, mesh = run_sim(comm, height=1,length=10,pres=231,T=.8,num_steps=500,r=.75,file=False,run=2, tol=0.05)
     #for r in np.linspace(0.58,0.75,3):
     #    for p in np.linspace(2,230, 15):
