@@ -69,12 +69,15 @@ def run_sim(comm, height=.41, length=2.2,pres=8,T=8,num_steps=500,r=0, save=Fals
     u_noslip = np.array((0,) * mesh.geometry.dim, dtype=PETSc.ScalarType)
     bc_noslip2 = dirichletbc(u_noslip, wall_dofs, V)
     
-    u_inlet = Function(V)
-    inlet_velocity = InletVelocity(t)
-    u_inlet.interpolate(inlet_velocity)
+    # u_inlet = Function(V)
+    # inlet_velocity = InletVelocity(t)
+    # u_inlet.interpolate(inlet_velocity)
     
     # inflow_dofs = locate_dofs_topological(V, fdim, ft.find(inlet_marker))
-    bc_inflow = dirichletbc(u_inlet, locate_dofs_topological(V, fdim, ft.find(inlet_marker)))
+    # bc_inflow = dirichletbc(u_inlet, locate_dofs_topological(V, fdim, ft.find(inlet_marker)))
+    # inflow_dofs = locate_dofs_geometrical(Q, inflow)
+    inflow_dofs = locate_dofs_topological(Q, fdim, ft.find(inlet_marker))
+    bc_inflow = dirichletbc(PETSc.ScalarType(pres), inflow_dofs, Q)
     # bc_inflow = dirichletbc(u_inlet, inflow_dofs)
     
     outflow_dofs = locate_dofs_topological(Q, fdim, ft.find(outlet_marker))
@@ -190,8 +193,8 @@ def run_sim(comm, height=.41, length=2.2,pres=8,T=8,num_steps=500,r=0, save=Fals
         progress.update(1)
         t += dt
         # Update inlet velocity
-        inlet_velocity.t = t
-        u_inlet.interpolate(inlet_velocity)
+        # inlet_velocity.t = t
+        # u_inlet.interpolate(inlet_velocity)
 
         # Step 1: Tentative velocity step
         A1.zeroEntries()
