@@ -40,29 +40,18 @@ def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
 
 def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
     rank = mesh.comm.Get_rank()
-    y = np.linspace(0+tol, length, int(length/tol))
-    points = np.zeros((3, int(length/tol)))
+    y = np.linspace(0, length, int(length/100))
+    points = np.zeros((3, int(length/100)))
     points[1] = y
     points[0] = 0
     
-    bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
     res_loc, res_loc1, res_loc2 = [[],[],[],None], [[],[],[], None], [[],[],[], None]
     
     def get_points_of_cells(bb_tree, msh, point): #, pop, cell):
         # Find cells whose bounding-box collide with the the points
-        cell_candidates = geometry.compute_collisions_points(bb_tree, point.T)
-        colliding_cells = geometry.compute_colliding_cells(msh, cell_candidates, point.T)
-        # Choose one of the cells that contains the point
-
-        if colliding_cells != None:
-            pop, cell =  [],[]
-            for i, point in enumerate(points.T):
-                if len(colliding_cells.links(i)) > 0:
-                    pop.append(point)
-                    cell.append(colliding_cells.links(i)[0])
             if pop != []:
                 pop = np.array(pop, dtype=np.float64)
-                u_val = u_n.eval(pop, cell)
+                u_val = u_n.eval(pop, cell) 
                 p_val = p_n.eval(pop, cell)
                 return [pop, u_val, p_val, rank]
         return [None, None, None, None]
@@ -92,21 +81,20 @@ def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
             return sorted_pop, sorted_u_val, sorted_p_val
         else:
             return None, None, None
-    
+    p_o_p,p_o_p1,p_o_p2,u_values,u_values1,u_values2,p_values,p_values1,p_values2=None,None,None,None,None,None,None,None,None
     # get velocity procile values at x[0] = 0
     res_loc = get_points_of_cells(bb_tree, mesh, points) # , p_o_p, cells)
-    p_o_p, u_values,_ = gather_and_sort(res_loc[0], res_loc[1], res_loc[2])
+    p_o_p, u_values, p_values = gather_and_sort(res_loc[0], res_loc[1], res_loc[2])
     
     # get velocity procile values at x of obstacle
-    y2 = np.linspace(0+tol, length-(r+tol), int(length/tol))
     points[1], points[0] = y, Ox
     res_loc1 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p1, cells1)
-    p_o_p1, u_values1,_ = gather_and_sort(res_loc1[0], res_loc1[1], res_loc1[2])
+    p_o_p1, u_values1, p_values1 = gather_and_sort(res_loc1[0], res_loc1[1], res_loc1[2])
     
     # get velocity profile at end of canal
     points[1], points[0] = y, length
     res_loc2 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p2, cells2)s
-    p_o_p2, u_values2,_ = gather_and_sort(res_loc2[0], res_loc2[1], res_loc2[2])
+    p_o_p2, u_values2, p_values2 = gather_and_sort(res_loc2[0], res_loc2[1], res_loc2[2])
     
     #for i in [res_loc,res_loc1,res_loc2]:
     #    if i[0] is not None:
@@ -124,9 +112,9 @@ def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
         # If run in parallel as a python file, we save a plot per processor
         plt.savefig(f"para_plot/u_n_p_{int(r):d}_{int(pres):d}_{int(t*100):d}.pdf") #25_{int(pres):d}_{int(t*100):d}.pdf")
     if rank == 0:
-        return p_o_p[:, 1], u_values[:,0], p_o_p1[:, 1], u_values1[:,0], p_o_p2[:,1], u_values2[:,0]
+        return p_o_p[:, 1], u_values[:,0], p_o_p1[:, 1], u_values1[:,0], p_o_p2[:,1], u_values2[:,0], p_values[:,0],p_values1[:,0],p_values2[:,0]
     else:
-        return None, None, None, None, None, None
+        return None, None, None, None, None, None, None, None, None
     #return res0[0][1][:], res0[1][0][:], res1[0][1][:], res1[1][0][:],res2[0][1][:], res2[1][0][:]
 
 def plot_2dmesh(V, mesh, u_n, c):
@@ -324,7 +312,7 @@ def store_array(arr, name, path, p, t, db="dtool_db"):
         np.savetxt(fpath+name+".txt", arr, fmt='%.10e')
     else:
         print("DEBUG: dx_utils/store_array()\nArray size 0 or None!")
-    print(f"Dataset '{name:s}' saved at {fpath:s}")
+    # print(f"Dataset '{name:s}' saved at {fpath:s}")
 
 def init_db(dataset_name, identifier=True, db="dtool_db"):
     """

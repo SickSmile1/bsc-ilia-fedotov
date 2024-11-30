@@ -8,16 +8,17 @@ from ufl import (FacetNormal, Identity, TestFunction, TrialFunction,
                  div, dot, grad, ds, dx, inner, lhs, nabla_grad, rhs, sym,
                  SpatialCoordinate, conditional)
 
+from dolfinx.io import VTXWriter
 import numpy as np
 
 from dx_utils import (create_obst, write_x_parview, store_array, init_db,
                     write_values_to_json, mfl_press, plot_para_velo, plot_2dmesh)
 
-def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05):
+def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05, mesh_created=False, meshed=None):
     # set obstacle location to center
     Ox = length/2
     # disable saving to .bp file
-    file =  False
+    file = True
     """if run==0:
         # this was the initial run to see reference values
         mesh = create_rectangle(comm,[[0,0], [length, height]],[int(length*25),int(height*25)])
@@ -28,8 +29,12 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
         mesh = create_unit_square(comm, 100, 100)"""
     
     # manually create mesh
-    mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = create_obst(comm,height, length, r, Ox, tol)
-    
+    if not mesh_created and meshed==None:
+        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = create_obst(comm,height, length, r, Ox, tol)
+    elif meshed is not None:
+        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = list(meshed)
+    else:
+        print("no mesh provided")
     debug = False
     t = 0
     pres = pres * length
@@ -141,25 +146,18 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
         print("<< formulated function and solvers >>")
     if file:
         from pathlib import Path
-        folder = Path("results")
+        folder = Path(f"results_{pres}/{r:.2f}")
         folder.mkdir(exist_ok=True, parents=True)
         vtx_u = VTXWriter(mesh.comm, folder / "poiseuille_u.bp", u_n, engine="BP4")
         vtx_p = VTXWriter(mesh.comm, folder / "poiseuille_p.bp", p_n, engine="BP4")
         vtx_u.write(t)
         vtx_p.write(t)
 
-    def inflow(x):
-        return np.isclose(x[0], 0)
-    boundary_facets = locate_entities_boundary(
-        mesh, mesh.topology.dim - 1, inflow
-    )
-
-    values = np.full(boundary_facets.shape, 1, dtype=np.int32)
-    facet_tag = meshtags(mesh, mesh.topology.dim - 1, boundary_facets, values)
     # add a simple plot output
 
     # this value can be used to break the run if the massflowrate change falls below 3e-3 in the loop
     mfl_old = 0    
+    relative_tolerance = 1.e-5
    
     if comm.rank==0 and save:
         # initialize dtool dataset
@@ -168,6 +166,18 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
                                                          ["height", "length", "pressure_delta", "simulation_time", 
                                                            "steps", "radius", "obstacle_location_x","meshing_size/tol"]))
     
+    cell_candidates = geometry.compute_collisions_points(bb_tree, point.T)
+    colliding_cells = geometry.compute_colliding_cells(msh, cell_candidates, point.T)
+    # Choose one of the cells that contains the point
+    pop, cell = [],[]
+    bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
+    if colliding_cells != None:
+        pop, cell =  [],[]
+        for i, point in enumerate(points.T):
+            if len(colliding_cells.links(i)) > 0:
+                pop.append(point)
+                cell.append(colliding_cells.links(i)[0])
+
     if debug:
         print("<< starting loop >>")
     for i in range(num_steps):
@@ -206,13 +216,17 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
         # Update variable with solution form this time step
         u_n.x.array[:] = u_.x.array[:]
         p_n.x.array[:] = p_.x.array[:]
-
+        
+        if i%50==0:
+            vtx_u.write(t)
+            vtx_p.write(t)
         # write data to dataset
-        if (i !=0 and i!=1 and (i%100)==0): # and comm.rank == 0:
-            mfl, _ = mfl_press(comm,length, mesh, facet_tag, u_n, p_n)
+        if (i !=0 and i!=1 and (i%200)==0): # and comm.rank == 0:
+            mfl, _ = mfl_press(comm,length, mesh, None, u_n, p_n)
             ax = None
-            x1, y1, x2, y2, x3, y3 = plot_para_velo(ax,mesh, u_n, p_n, T, length, pres,Ox, r, tol)
-            plot_2dmesh(V, mesh, u_n, t)
+            print("\n<<--    this is pn     -->>",p_n.x.array[:])
+            x1, y1, x2, y2, x3, y3,p1,p2,p3 = plot_para_velo(ax,mesh, u_n, p_n, T, length, pres,Ox, r, tol)
+            # plot_2dmesh(V, mesh, u_n, t)
             if comm.rank==0 and save:
                 plot_2dmesh(V, mesh, u_n, t)
                 store_array(mfl, "massflowrate", pat,p,t)
@@ -223,6 +237,28 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
                 store_array(y2,  "y_at_5", pat,p,t)
                 store_array(x3,  "x_at_1", pat,p,t)
                 store_array(y3,  "y_at_1", pat,p,t)
+                store_array(p1,  "p_at_0", pat,p,t)
+                store_array(p2,  "p_at_5", pat,p,t)
+                store_array(p3,  "p_at_1", pat,p,t)
+                y_grid = np.linspace(0,height,y1.shape[0])
+                y_grid2 = np.linspace(0,height,y2.shape[0])
+                flux = np.array([np.trapz(y=y1,x=y_grid), np.trapz(y=y2,x=y_grid2), np.trapz(y=y3,x=y_grid)])
+                #print("ygrid2",y_grid2)
+                #print("ygrid", y_grid)
+                print("flux: ",flux, " flux_mean: ",mfl)
+                store_array(flux, "flux_trapz", pat, p, t)
+                mfl = comm.bcast(np.mean(flux), root=0)
+            if mfl_old != -1:
+                mean_of_last_two = np.mean(mfl, mfl_old)
+                dm = np.abs(mfl_old - mfl)
+                relative_deviation = dm / mean_of_last_two
+                print("Absolute deviation: %g", dm)
+                print("Relative deviation: %g", relative_deviation)
+                mfl_old = mfl
+                if relative_deviation < relative_tolerance:
+                    print("Relative mass flow change %g converged within relatvie tolerance %g", relative_deviation, relative_tolerance)
+                    break
+            mfl_old = comm.bcast(mfl, root=0)
             #dist = np.abs(mfl[0] - mfl_old)
             #mfl_old = mfl[0]
             #print(t, "dist: ",dist)
@@ -230,10 +266,10 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
             #    print("terminating")
             #    break
 
-        if file:
-            # Write solutions to fileV
-            vtx_u.write(t)
-            vtx_p.write(t)
+        #if file:
+        # Write solutions to fileV
+        # vtx_u.write(t)
+        # vtx_p.write(t)
     if mesh.comm.rank == 0 and save:
         #plot_2dmesh(V, mesh, u_n, 2)
         p.freeze()
