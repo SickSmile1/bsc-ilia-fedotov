@@ -1,4 +1,4 @@
-
+from dolfinx import geometry
 from petsc4py import PETSc
 from dolfinx.fem import Constant, Function, functionspace, assemble_scalar, dirichletbc, form, locate_dofs_geometrical, locate_dofs_topological
 from dolfinx.fem.petsc import assemble_matrix, assemble_vector, apply_lifting, create_vector, set_bc
@@ -11,8 +11,10 @@ from ufl import (FacetNormal, Identity, TestFunction, TrialFunction,
 from dolfinx.io import VTXWriter
 import numpy as np
 
-from dx_utils import (create_obst, write_x_parview, store_array, init_db,
-                    write_values_to_json, mfl_press, plot_para_velo, plot_2dmesh)
+from dx_utils import (create_obst, gather_and_sort, get_pop_cells, write_x_parview, store_array, init_db,
+                    write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells)
+
+import matplotlib.pyplot as plt
 
 def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05, mesh_created=False, meshed=None):
     # set obstacle location to center
@@ -27,14 +29,15 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
         # problems may arise with boundary conditions, if set from "locate_dofs_topological" 
         # as problems remained unresolved run==2 was created
         mesh = create_unit_square(comm, 100, 100)"""
-    
+    mesh, vtx_u, vtx_p = None, None, None
     # manually create mesh
-    if not mesh_created and meshed==None:
+    if not mesh_created and meshed is None:
         mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = create_obst(comm,height, length, r, Ox, tol)
     elif meshed is not None:
         mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = list(meshed)
     else:
         print("no mesh provided")
+        return 0
     debug = False
     t = 0
     pres = pres * length
@@ -156,28 +159,22 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
     # add a simple plot output
 
     # this value can be used to break the run if the massflowrate change falls below 3e-3 in the loop
-    mfl_old = 0    
+    mfl_old, mfl = 0,0
+
     relative_tolerance = 1.e-5
    
-    if comm.rank==0 and save:
+    if mesh.comm.rank==0 and save:
         # initialize dtool dataset
         p, pat = init_db(f"parametric2_canal_{r:.2f}_{pres:.1f}", False)
         p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, r, Ox, tol],
                                                          ["height", "length", "pressure_delta", "simulation_time", 
                                                            "steps", "radius", "obstacle_location_x","meshing_size/tol"]))
     
-    cell_candidates = geometry.compute_collisions_points(bb_tree, point.T)
-    colliding_cells = geometry.compute_colliding_cells(msh, cell_candidates, point.T)
-    # Choose one of the cells that contains the point
-    pop, cell = [],[]
-    bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
-    if colliding_cells != None:
-        pop, cell =  [],[]
-        for i, point in enumerate(points.T):
-            if len(colliding_cells.links(i)) > 0:
-                pop.append(point)
-                cell.append(colliding_cells.links(i)[0])
-
+    pop, cell = get_pop_cells(length, 0.5, mesh)
+    pop_center, cell_center = get_pop_cells(length, Ox, mesh)
+    pop_end, cell_end = get_pop_cells(length, length-.5, mesh)
+    p_o_p, p_o_p_center, p_o_p_end = np.array(pop, dtype=np.float64),np.array(pop_center, dtype=np.float64),np.array(pop_end, dtype=np.float64)
+    
     if debug:
         print("<< starting loop >>")
     for i in range(num_steps):
@@ -222,56 +219,45 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
             vtx_p.write(t)
         # write data to dataset
         if (i !=0 and i!=1 and (i%200)==0): # and comm.rank == 0:
-            mfl, _ = mfl_press(comm,length, mesh, None, u_n, p_n)
-            ax = None
-            print("\n<<--    this is pn     -->>",p_n.x.array[:])
-            x1, y1, x2, y2, x3, y3,p1,p2,p3 = plot_para_velo(ax,mesh, u_n, p_n, T, length, pres,Ox, r, tol)
-            # plot_2dmesh(V, mesh, u_n, t)
-            if comm.rank==0 and save:
-                plot_2dmesh(V, mesh, u_n, t)
-                store_array(mfl, "massflowrate", pat,p,t)
-                # store_array(pa, "pressure_avg", pat,p)           
-                store_array(x1, "x_at_0", pat,p,t)
+            mfl1, _ = mfl_press(mesh.comm,length, mesh, None, u_n, p_n)
+            flux, mfl = None, None
+            # print("\n<<--    this is pn     -->>",p_n.x.array[:])
+            pop, y1, p1 = get_unsorted_arrays(p_o_p, cell, u_n, p_n)
+            pop1, y2, p2 = get_unsorted_arrays(p_o_p_center, cell_center, u_n, p_n)
+            pop2, y3, p3 = get_unsorted_arrays(p_o_p_end, cell_end, u_n, p_n)
+            pop, y1, p1 = gather_and_sort(pop, y1, p1, mesh)
+            pop1, y2, p2 = gather_and_sort(pop1, y2, p2, mesh)
+            pop2, y3, p3 = gather_and_sort(pop2, y3, p3, mesh)
+            if mesh.comm.rank == 0:
+                y_grid = np.linspace(0,height,y1.shape[0])
+                y_grid2 = np.linspace(0,height,y2.shape[0])
+                flux = np.array([np.trapz(y=y1[:,0],x=y_grid),
+                       np.trapz(y=y2[:,0],x=y_grid2), 
+                       np.trapz(y=y3[:,0],x=y_grid)])
+                print("flux: ",flux, " flux_mean: ", np.mean(mfl1))
+                store_array(flux, "flux_trapz", pat, p, t)
+                store_array(mfl1, "massflowrate", pat,p,t)
                 store_array(y1,  "y_at_0", pat,p,t)
-                store_array(x2,  "x_at_5", pat,p,t)
                 store_array(y2,  "y_at_5", pat,p,t)
-                store_array(x3,  "x_at_1", pat,p,t)
                 store_array(y3,  "y_at_1", pat,p,t)
                 store_array(p1,  "p_at_0", pat,p,t)
                 store_array(p2,  "p_at_5", pat,p,t)
                 store_array(p3,  "p_at_1", pat,p,t)
-                y_grid = np.linspace(0,height,y1.shape[0])
-                y_grid2 = np.linspace(0,height,y2.shape[0])
-                flux = np.array([np.trapz(y=y1,x=y_grid), np.trapz(y=y2,x=y_grid2), np.trapz(y=y3,x=y_grid)])
-                #print("ygrid2",y_grid2)
-                #print("ygrid", y_grid)
-                print("flux: ",flux, " flux_mean: ",mfl)
-                store_array(flux, "flux_trapz", pat, p, t)
-                mfl = comm.bcast(np.mean(flux), root=0)
-            if mfl_old != -1:
-                mean_of_last_two = np.mean(mfl, mfl_old)
-                dm = np.abs(mfl_old - mfl)
-                relative_deviation = dm / mean_of_last_two
-                print("Absolute deviation: %g", dm)
-                print("Relative deviation: %g", relative_deviation)
-                mfl_old = mfl
-                if relative_deviation < relative_tolerance:
-                    print("Relative mass flow change %g converged within relatvie tolerance %g", relative_deviation, relative_tolerance)
-                    break
-            mfl_old = comm.bcast(mfl, root=0)
-            #dist = np.abs(mfl[0] - mfl_old)
-            #mfl_old = mfl[0]
-            #print(t, "dist: ",dist)
-            #if (dist < 3e-3):
-            #    print("terminating")
-            #    break
 
-        #if file:
-        # Write solutions to fileV
-        # vtx_u.write(t)
-        # vtx_p.write(t)
+                if mfl_old != -1 and mesh.comm.rank == 0:
+                    mfl = np.mean(flux)
+                    print(mfl, mfl_old)
+                    mean_of_last_two = np.mean([mfl, mfl_old])
+                    dm = np.abs(mfl_old - mfl)
+                    relative_deviation = dm / mean_of_last_two
+                    print("Absolute deviation: %g", dm)
+                    print("Relative deviation: %g", relative_deviation)
+                    mfl_old = mfl
+                    if relative_deviation < relative_tolerance:
+                        print("Relative mass flow change %g converged within relatvie tolerance %g", relative_deviation, relative_tolerance)
+                        break
+            mfl_old = mesh.comm.bcast(mfl_old, root=0)
     if mesh.comm.rank == 0 and save:
-        #plot_2dmesh(V, mesh, u_n, 2)
         p.freeze()
     # Close xmdf file
     if file:
@@ -283,4 +269,4 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
     solver1.destroy()
     solver2.destroy()
     solver3.destroy()
-    return u_n, p_n, V, mesh
+    return mfl
