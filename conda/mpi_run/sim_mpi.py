@@ -2,7 +2,7 @@ from mpi4py import MPI
 
 # dolfinx and meshing
 import numpy as np
-
+import matplotlib.pyplot as plt
 from dx_sim import run_sim
 from dx_utils import create_obst
 
@@ -23,11 +23,15 @@ def parse_arguments():
     return parser.parse_args()
 
 def run_loop_simulation(comm, radius_range, pressure_range, save, tol):
-    for r in radius_range:
+    res = np.empty((len(radius_range), len(pressure_range) ))
+    for i, r in enumerate(radius_range):
         mesh = list(create_obst(comm,1, 10, r, 5, tol))
-        for p in pressure_range:
+        for j, p in enumerate(pressure_range):
             # parameters: (comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, tol=.05):
-            run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=1600,r=r,save=save,tol=tol, meshed=mesh)
+            res[i,j] = run_sim(comm, height=1,length=10,pres=p,T=.8,num_steps=1600,r=r,save=save,tol=tol, meshed=mesh)
+    np.savetxt("mfl_arr.txt",res, fmt='%.10e')
+    plt.imshow(res)
+    plt.savefig("mfl_imshow.pdf")
     """
     Run simulations for a range of radii and pressures.
 

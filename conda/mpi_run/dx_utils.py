@@ -5,7 +5,7 @@ import dtoolcore
 import dtoolcore.utils as utils
 import time
 import numpy as np
-import json
+# import json
 
 from dolfinx import geometry
 from dolfinx.io import VTXWriter, gmshio, XDMFFile
@@ -24,7 +24,7 @@ def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
     x = SpatialCoordinate(mesh)
     tol = 5e-2
     mfl, mass_flow, p_loc, pressure_avg = np.array([]), None, None, np.array([])
-    for i in np.array([0+2*tol, x_max/2, x_max-2*tol]):
+    for i in np.array([0.5, x_max/2, x_max-.5]):
         slice_condition = conditional(ge(x[0], i-tol), 1.0, 0.0) * conditional(le(x[0], i+tol), 1.0, 0.0)
         # Calculate mass flow rate at the current slice
         mass_flow_local = assemble_scalar(form(u_sub *slice_condition* dx))
@@ -38,84 +38,81 @@ def mfl_press(comm,x_max, mesh, mesh_tag, u_n, p):
         print("mass_flow: ",mfl) # , "pressure: ", pressure_avg)
     return mfl, pressure_avg
 
+def get_unsorted_arrays(pop, cell, u_n, p_n): #, pop, cell):
+    # Find cells whose bounding-box collide with the the points
+    if len(pop) > 0:
+        u_val = u_n.eval(pop, cell) 
+        p_val = p_n.eval(pop, cell)
+        return [pop, u_val, p_val]
+    else:
+        return [None, None, None]
+
+def get_pop_cells(length, x, mesh):
+    y = np.linspace(0, length, 100)
+    points = np.zeros((3, 100))
+    points[1] = y
+    points[0] = x
+    bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
+    cell_candidates = geometry.compute_collisions_points(bb_tree, points.T)
+    colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, points.T)
+    # Choose one of the cells that contains the point
+    pop, cell = [],[]
+    if colliding_cells is not None:
+        for i, point in enumerate(points.T):
+            if len(colliding_cells.links(i)) > 0:
+                pop.append(point)
+                cell.append(colliding_cells.links(i)[0])
+        return pop, cell
+
+def gather_and_sort(pop, u_val, p_val, mesh):
+    # Gather data from all ranks
+    pop_res, uval_res, pval_res = None, None, None
+    sorted_pop, sorted_u_val, sorted_p_val = None, None, None
+    all_pop = mesh.comm.gather(pop, root=0)
+    all_u_val = mesh.comm.gather(u_val, root=0)
+    all_p_val = mesh.comm.gather(p_val, root=0)
+    if mesh.comm.rank == 0:
+        comb_pop = [arr for arr in all_pop if arr is not None]
+        comb_u_val = [arr for arr in all_u_val if arr is not None]
+        comb_p_val = [arr for arr in all_p_val if arr is not None]
+        # Combine gathered data
+        combined_pop = np.concatenate(comb_pop)
+        combined_u_val = np.concatenate(comb_u_val)
+        combined_p_val = np.concatenate(comb_p_val)
+
+        # Create a sorting index based on u_val[:,0]
+        sort_index = np.argsort(combined_u_val[:, 0])
+        # Sort all arrays using this index
+        sorted_pop = combined_pop[sort_index]
+        sorted_u_val = combined_u_val[sort_index]
+        sorted_p_val = combined_p_val[sort_index]
+    pop_res = mesh.comm.bcast(sorted_pop, root=0)    
+    uval_res = mesh.comm.bcast(sorted_u_val, root=0)    
+    pval_res = mesh.comm.bcast(sorted_p_val, root=0)    
+    return pop_res, uval_res, pval_res
+
 def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
     rank = mesh.comm.Get_rank()
-    y = np.linspace(0, length, int(length/100))
-    points = np.zeros((3, int(length/100)))
-    points[1] = y
-    points[0] = 0
     
     res_loc, res_loc1, res_loc2 = [[],[],[],None], [[],[],[], None], [[],[],[], None]
-    
-    def get_points_of_cells(bb_tree, msh, point): #, pop, cell):
-        # Find cells whose bounding-box collide with the the points
-            if pop != []:
-                pop = np.array(pop, dtype=np.float64)
-                u_val = u_n.eval(pop, cell) 
-                p_val = p_n.eval(pop, cell)
-                return [pop, u_val, p_val, rank]
-        return [None, None, None, None]
 
-    def gather_and_sort(pop, u_val, p_val):
-        # Gather data from all ranks
-        all_pop = mesh.comm.gather(pop, root=0)
-        all_u_val = mesh.comm.gather(u_val, root=0)
-        all_p_val = mesh.comm.gather(p_val, root=0)
-        
-        if rank == 0:
-            comb_pop = [arr for arr in all_pop if arr is not None]
-            comb_u_val = [arr for arr in all_u_val if arr is not None]
-            comb_p_val = [arr for arr in all_p_val if arr is not None]
-            # Combine gathered data
-            combined_pop = np.concatenate(comb_pop)
-            combined_u_val = np.concatenate(comb_u_val)
-            combined_p_val = np.concatenate(comb_p_val)
-    
-            # Create a sorting index based on u_val[:,0]
-            sort_index = np.argsort(combined_u_val[:, 0])
-            # Sort all arrays using this index
-            sorted_pop = combined_pop[sort_index]
-            sorted_u_val = combined_u_val[sort_index]
-            sorted_p_val = combined_p_val[sort_index]
-    
-            return sorted_pop, sorted_u_val, sorted_p_val
-        else:
-            return None, None, None
     p_o_p,p_o_p1,p_o_p2,u_values,u_values1,u_values2,p_values,p_values1,p_values2=None,None,None,None,None,None,None,None,None
     # get velocity procile values at x[0] = 0
     res_loc = get_points_of_cells(bb_tree, mesh, points) # , p_o_p, cells)
     p_o_p, u_values, p_values = gather_and_sort(res_loc[0], res_loc[1], res_loc[2])
     
     # get velocity procile values at x of obstacle
-    points[1], points[0] = y, Ox
     res_loc1 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p1, cells1)
     p_o_p1, u_values1, p_values1 = gather_and_sort(res_loc1[0], res_loc1[1], res_loc1[2])
     
     # get velocity profile at end of canal
-    points[1], points[0] = y, length
     res_loc2 = get_points_of_cells(bb_tree, mesh, points) #, p_o_p2, cells2)s
     p_o_p2, u_values2, p_values2 = gather_and_sort(res_loc2[0], res_loc2[1], res_loc2[2])
     
-    #for i in [res_loc,res_loc1,res_loc2]:
-    #    if i[0] is not None:
-    #        print(f"not empty rank is {int(i[3]):d}\n",i[0][:,1], i[1][:,0])
-
-    #print("val: ", res1, f" rank is {res0[3]}") #, " val1: ", len(res0[0][:])) #, " val2: ", res[2])
-    if ax is not None:
-        ax.set_title("Velocity over x-Axis")
-        ax.plot(p_o_p[:, 1], u_values[:,0], "k", linewidth=2, label="x=0")
-        ax.plot(p_o_p1[:, 1], u_values1[:,0], "y", linewidth=2, label=r"x=%s"%(Ox))
-        ax.plot(p_o_p2[:, 1], u_values2[:,0], "b", linewidth=2, label=r"x=%s"%(length))
-        ax.legend()
-        ax.set_xlabel("x")
-        ax.set_ylabel("Velocity u")
-        # If run in parallel as a python file, we save a plot per processor
-        plt.savefig(f"para_plot/u_n_p_{int(r):d}_{int(pres):d}_{int(t*100):d}.pdf") #25_{int(pres):d}_{int(t*100):d}.pdf")
     if rank == 0:
         return p_o_p[:, 1], u_values[:,0], p_o_p1[:, 1], u_values1[:,0], p_o_p2[:,1], u_values2[:,0], p_values[:,0],p_values1[:,0],p_values2[:,0]
     else:
         return None, None, None, None, None, None, None, None, None
-    #return res0[0][1][:], res0[1][0][:], res1[0][1][:], res1[1][0][:],res2[0][1][:], res2[1][0][:]
 
 def plot_2dmesh(V, mesh, u_n, c):
     topology, cell_types, geo = vtk_mesh(V)
