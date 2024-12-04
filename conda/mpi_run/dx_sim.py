@@ -12,7 +12,7 @@ from dolfinx.io import VTXWriter
 import numpy as np
 
 from dx_utils import (create_obst, gather_and_sort, get_pop_cells, write_x_parview, store_array, init_db,
-                    write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells)
+                    write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells, pops_cells)
 
 import matplotlib.pyplot as plt
 
@@ -20,7 +20,9 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
     # set obstacle location to center
     Ox = length/2
     # disable saving to .bp file
-    file = True
+    file = False
+    # breaking condition for mpi
+    break_flag = False
     """if run==0:
         # this was the initial run to see reference values
         mesh = create_rectangle(comm,[[0,0], [length, height]],[int(length*25),int(height*25)])
@@ -169,10 +171,17 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
         p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, r, Ox, tol],
                                                          ["height", "length", "pressure_delta", "simulation_time", 
                                                            "steps", "radius", "obstacle_location_x","meshing_size/tol"]))
-    
-    pop, cell = get_pop_cells(length, 0.5, mesh)
-    pop_center, cell_center = get_pop_cells(length, Ox, mesh)
-    pop_end, cell_end = get_pop_cells(length, length-.5, mesh)
+    def half_circle_down(r, num_points=100):
+        return [length/2+r * np.cos(np.linspace(0, np.pi, num_points)), (1-tol)-r * np.sin(np.linspace(0, np.pi, num_points)),
+           np.zeros(num_points)]
+    # calculate pressure at membrane
+    r_p = np.array(half_circle_down(r), dtype=np.float64)
+    press_pop, cell_press = pops_cells(r_p, mesh)
+    press_p_o_p = np.array(press_pop, dtype=np.float64)
+    # calculate pressure/velocity at different cross-sections
+    pop, cell = get_pop_cells(height, length/2-1, mesh)
+    pop_center, cell_center = get_pop_cells(height-r, Ox, mesh)
+    pop_end, cell_end = get_pop_cells(height, length/2+1, mesh)
     p_o_p, p_o_p_center, p_o_p_end = np.array(pop, dtype=np.float64),np.array(pop_center, dtype=np.float64),np.array(pop_end, dtype=np.float64)
     
     if debug:
@@ -214,7 +223,7 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
         u_n.x.array[:] = u_.x.array[:]
         p_n.x.array[:] = p_.x.array[:]
         
-        if i%50==0:
+        if i%50==0 and file:
             vtx_u.write(t)
             vtx_p.write(t)
         # write data to dataset
@@ -222,9 +231,11 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
             mfl1, _ = mfl_press(mesh.comm,length, mesh, None, u_n, p_n)
             flux, mfl = None, None
             # print("\n<<--    this is pn     -->>",p_n.x.array[:])
+            pop_p, yp, pp = get_unsorted_arrays(press_p_o_p, cell_press, u_n, p_n)
             pop, y1, p1 = get_unsorted_arrays(p_o_p, cell, u_n, p_n)
             pop1, y2, p2 = get_unsorted_arrays(p_o_p_center, cell_center, u_n, p_n)
             pop2, y3, p3 = get_unsorted_arrays(p_o_p_end, cell_end, u_n, p_n)
+            pop_p, yp, pp = gather_and_sort(pop_p, yp, pp, mesh)
             pop, y1, p1 = gather_and_sort(pop, y1, p1, mesh)
             pop1, y2, p2 = gather_and_sort(pop1, y2, p2, mesh)
             pop2, y3, p3 = gather_and_sort(pop2, y3, p3, mesh)
@@ -243,6 +254,8 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
                 store_array(p1,  "p_at_0", pat,p,t)
                 store_array(p2,  "p_at_5", pat,p,t)
                 store_array(p3,  "p_at_1", pat,p,t)
+                store_array(pp,"p_courve", pat,p, t)
+                store_array(yp,"y_courve", pat,p, t)
 
                 if mfl_old != -1 and mesh.comm.rank == 0:
                     mfl = np.mean(flux)
@@ -255,8 +268,11 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
                     mfl_old = mfl
                     if relative_deviation < relative_tolerance:
                         print("Relative mass flow change %g converged within relatvie tolerance %g", relative_deviation, relative_tolerance)
-                        break
+                        break_flag = True
+            break_flag = mesh.comm.bcast(break_flag, root=0)
             mfl_old = mesh.comm.bcast(mfl_old, root=0)
+            if break_flag:
+                break
     if mesh.comm.rank == 0 and save:
         p.freeze()
     # Close xmdf file

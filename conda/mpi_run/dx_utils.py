@@ -52,6 +52,10 @@ def get_pop_cells(length, x, mesh):
     points = np.zeros((3, 100))
     points[1] = y
     points[0] = x
+    pop, cell = pops_cells(points, mesh)
+    return pop, cell
+
+def pops_cells(points, mesh):
     bb_tree = geometry.bb_tree(mesh, mesh.topology.dim)
     cell_candidates = geometry.compute_collisions_points(bb_tree, points.T)
     colliding_cells = geometry.compute_colliding_cells(mesh, cell_candidates, points.T)
