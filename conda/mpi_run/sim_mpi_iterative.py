@@ -23,7 +23,7 @@ def run_iterative(comm, save, tol):
         if np.max(p_old)+i >80:
             break
         p_old, pop = run_sim(comm, height=1, length=10,pres=8,T=.8,num_steps=1000, save=1, tol=.05, 
-             mesh_created=False, meshed=None, new_membrane=False, p_old=p_old2, pg=np.max(p_old)+i)
+             mesh_created=False, meshed=None, new_membrane=False, p_old=p_old, pg=np.max(p_old)+i)
     """
     Run simulations for a range of radii and pressures.
 
