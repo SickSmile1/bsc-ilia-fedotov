@@ -19,7 +19,7 @@ def parse_arguments():
 def run_iterative(comm, save, tol):
     p_old, pop = run_sim(comm, height=1, length=10,pres=8,T=.8,num_steps=1000, save=1, tol=.05, 
                          mesh_created=False, meshed=None, new_membrane=True)
-    for i in range(20):
+    for i in range(1,20):
         if np.max(p_old)+i >80:
             break
         p_old, pop = run_sim(comm, height=1, length=10,pres=8,T=.8,num_steps=1000, save=1, tol=.05, 

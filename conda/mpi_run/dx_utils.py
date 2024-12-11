@@ -159,6 +159,7 @@ def zetta(p0, pl, pg, L=2,T=30, num=100):
     # Returns the zetta value at the midpoint of a 10-unit long membrane
     """
     x = np.linspace(0,2,num)
+    print("p0: ",p0, " pg: ",pg)
     assert (p0<pg)
     pd = p0-pl
     res = 1/T * (1/2 * (pg - p0) * x**2 + pd/(6*L) * x**3 - 1/6 * (3*pg - 2*p0 - pl)* L * x )
@@ -382,7 +383,7 @@ def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
         gmsh.option.setNumber("Mesh.ElementOrder", 1)
         gmsh.option.setNumber("Mesh.RecombineAll", 0)
         gmsh.model.mesh.generate(2)
-        gmsh.write(f"mesh_{pg:d}.msh")
+        gmsh.write(f"mesh_{pg:.1f}.msh")
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
     upper = comm.bcast(upper, root=0)
