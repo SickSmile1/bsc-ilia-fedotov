@@ -85,7 +85,7 @@ def gather_and_sort(pop, u_val, p_val, mesh):
         combined_p_val = np.concatenate(comb_p_val)
 
         # Create a sorting index based on u_val[:,0]
-        sort_index = np.argsort(combined_u_val[:, 0])
+        sort_index = np.argsort(combined_pop[:, 0])
         # Sort all arrays using this index
         sorted_pop = combined_pop[sort_index]
         sorted_u_val = combined_u_val[sort_index]
@@ -118,6 +118,54 @@ def plot_para_velo(ax, mesh, u_n, p_n, t, length, pres, Ox, r, tol):
     else:
         return None, None, None, None, None, None, None, None, None
 
+def zetta(p0, pl, pg, L=2,T=30, num=100):
+    """
+    Calculate the zetta value for a given location in a membrane canal.
+
+    This function computes the zetta value based on the pressures at different points
+    of a membrane and the location within the canal.
+
+    Parameters:
+    -----------
+    T : float
+        The stiffness of the membrane
+    p0 : float
+        The pressure at the beginning of the membrane.
+    pl : float
+        The pressure at the end of the membrane.
+    pg : float
+        The outer pressure of the membrane.
+    L : float
+        The length of the membrane.
+    x : float
+        The location in the canal for which to calculate zetta.
+
+    Returns:
+    --------
+    float
+        The calculated zetta value at the given location.
+
+    Notes:
+    ------
+    The function uses the following formula:
+    zetta = 1/T * (1/2 * (pg - p0) * x**2 + pd/(6*L) * x**3 - 1/6 * (3*pg - 2*p0 - pl)* L* x)
+    where pd = p0 - pl
+
+    The constant T is not defined in the function and should be provided or defined elsewhere.
+
+    Example:
+    --------
+    >>> zetta(100, 80, 120, 10, 5)
+    # Returns the zetta value at the midpoint of a 10-unit long membrane
+    """
+    x = np.linspace(0,2,num)
+    assert (p0<pg)
+    pd = p0-pl
+    res = 1/T * (1/2 * (pg - p0) * x**2 + pd/(6*L) * x**3 - 1/6 * (3*pg - 2*p0 - pl)* L * x )
+    res += 1
+    assert np.min(res) > 0
+    return res
+
 def plot_2dmesh(V, mesh, u_n, c):
     topology, cell_types, geo = vtk_mesh(V)
     values = np.zeros((geo.shape[0], 3), dtype=np.float64)
@@ -141,7 +189,7 @@ def plot_2dmesh(V, mesh, u_n, c):
     #    plotter.screenshot(f"canal_{c:d}.png")
     #f"para_plot/u_n_p_canal_test")#{int(pres):d}
     rank = mesh.comm.rank
-    fig_as_array = plotter.screenshot(f"velocity_graph_{c:.2f}_{rank:d}.png")
+    fig_as_array = plotter.screenshot(f"velocity_graph_{int(c):d}.png")
     plotter.close()
 
 def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
@@ -252,6 +300,89 @@ def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
         gmsh.model.addPhysicalGroup(2, [16], tag=5, name="Domain")
         factory.synchronize()
         gmsh.model.mesh.generate(2)
+    infl = comm.bcast(infl, root=0)
+    outfl = comm.bcast(outfl, root=0)
+    upper = comm.bcast(upper, root=0)
+    lower = comm.bcast(lower, root=0)
+    gmsh.model = comm.bcast(gmsh.model, root=0)
+    mesh, ct, ft = gmshio.model_to_mesh(gmsh.model, comm, model_rank,gdim=2)
+    return mesh, ct, ft, infl, outfl, upper, lower
+
+def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
+    #comm,H=1, L=3,r=.3, Ox=1.5, lc=.07
+    def define_membrane(factory, begin, end, l1, lc1,L):
+        memb = zetta(p0, pl, pg)
+        startpoint = (L/2)-(L/10)
+        endpoint = (L/2)+(L/10)
+        x = np.linspace(startpoint, endpoint, 100)
+        lines = []
+        points = []
+        points.append(begin)
+        for i in range(len(x)-2):
+            new_point = factory.addPoint(x[i+1], memb[i+1], 0, lc1)
+            points.append(new_point)
+            lines.append(factory.addLine(points[-2], points[-1]))
+        lines.append(factory.addLine(points[-1],end))
+        return lines, points
+    
+    silent = False
+    model_rank = 0
+    infl, outfl, upper, lower = [],[],[],[]
+    gmsh.initialize()
+    if silent:
+        gmsh.option.setNumber("General.Terminal",0)
+    gmsh.model.add("canal")
+    #gmsh.option.setNumber("Geometry.Tolerance", 1e-8)
+    #gmsh.option.setNumber("Mesh.CharacteristicLengthFactor", 1)
+    
+    cm = 1 # e-02 # not needed for our sim
+    h1 = H * cm if H is not None else 1
+    l1 = L * cm if L is not None else 10
+    Lc1 = lc
+    
+    # We start by defining some points and some lines. To make the code shorter we
+    # can redefine a namespace:
+    factory = gmsh.model.occ
+    model = gmsh.model
+    if comm.rank==0:
+        lowerleft = factory.addPoint(0, 0, 0, Lc1)
+        lowerright = factory.addPoint(l1, 0, 0, Lc1)
+        upperright = factory.addPoint(l1, h1 , 0, Lc1)
+        upperleft = factory.addPoint(0, h1, 0, Lc1)
+        
+        begin = factory.addPoint(L/2-L/10, h1, 0, Lc1)
+        end = factory.addPoint(L/2+L/10, h1, 0, Lc1)
+        
+        inflow_line = factory.addLine(lowerleft, upperleft)
+        upper_wall_left = factory.addLine(upperleft, begin)
+        upper_wall_right = factory.addLine(end, upperright)
+        outflow_line = factory.addLine(upperright, lowerright)
+        lower_wall = factory.addLine(lowerright, lowerleft)
+        lines = None
+        if first:
+            lines = [factory.addLine(begin, end)]
+        else:
+            # add obstacle form
+            lines, points = define_membrane(factory, begin, end, l1, Lc1, L)
+
+        # Define the outer curve loop
+        o_loop = factory.addCurveLoop([inflow_line, upper_wall_left, *lines,
+                                      upper_wall_right, outflow_line, lower_wall])
+        
+        # Create the plane surface with a hole
+        surface = factory.addPlaneSurface([o_loop])
+        factory.synchronize()
+        upper = model.addPhysicalGroup(dim=1, tags=[upper_wall_left, *lines, upper_wall_right],tag=1,name="upper_wall")
+        outfl = model.addPhysicalGroup(dim=1, tags=[outflow_line], tag=2, name="outflow")
+        infl = model.addPhysicalGroup(dim=1, tags=[inflow_line], tag=3, name="inflow")
+        lower = model.addPhysicalGroup(dim=1, tags=[lower_wall], tag=4, name="lower_wall")
+        
+        gmsh.model.addPhysicalGroup(dim=2, tags=[surface], tag=5, name="Domain")
+        factory.synchronize()
+        gmsh.option.setNumber("Mesh.ElementOrder", 1)
+        gmsh.option.setNumber("Mesh.RecombineAll", 0)
+        gmsh.model.mesh.generate(2)
+        gmsh.write(f"mesh_{pg:d}.msh")
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
     upper = comm.bcast(upper, root=0)
