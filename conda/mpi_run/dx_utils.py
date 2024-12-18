@@ -277,7 +277,7 @@ def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
         factory.addLine(5, 4, 11)
         factory.addLine(4, 1, 12)
         
-        factory.addCircleArc(5, 6, 7, 13)
+        factory.addCircleArc(7, 6, 5, 13)
         
         # Define the inner curve loop (the circle arc)
         factory.addCurveLoop([-13], 14)
@@ -300,12 +300,16 @@ def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
 
         gmsh.model.addPhysicalGroup(2, [16], tag=5, name="Domain")
         factory.synchronize()
+        gmsh.option.setNumber("Mesh.ElementOrder", 1)
+        gmsh.option.setNumber("Mesh.RecombineAll", 0)
+        gmsh.option.setNumber("Mesh.Algorithm", 6)
         gmsh.model.mesh.generate(2)
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
     upper = comm.bcast(upper, root=0)
     lower = comm.bcast(lower, root=0)
     gmsh.model = comm.bcast(gmsh.model, root=0)
+    gmsh.write(f"mesh_r{r:.1f}.msh")
     mesh, ct, ft = gmshio.model_to_mesh(gmsh.model, comm, model_rank,gdim=2)
     return mesh, ct, ft, infl, outfl, upper, lower
 
@@ -383,7 +387,7 @@ def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
         gmsh.option.setNumber("Mesh.ElementOrder", 1)
         gmsh.option.setNumber("Mesh.RecombineAll", 0)
         gmsh.model.mesh.generate(2)
-        gmsh.write(f"mesh_{pg:.1f}.msh")
+        #gmsh.write(f"mesh_{pg:.1f}.msh")
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
     upper = comm.bcast(upper, root=0)

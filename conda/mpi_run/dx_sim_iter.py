@@ -193,9 +193,9 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     #print(press_pop, r)
     press_p_o_p = np.array(press_pop, dtype=np.float64)
     # calculate pressure/velocity at different cross-sections
-    pop, cell = get_pop_cells(height, length/2-1, mesh)
+    pop, cell = get_pop_cells(height, length/2-1.05, mesh)
     pop_center, cell_center = get_pop_cells(center_height-0.05, Ox, mesh)
-    pop_end, cell_end = get_pop_cells(height, length/2+1, mesh)
+    pop_end, cell_end = get_pop_cells(height, length/2+1.05, mesh)
     p_o_p, p_o_p_center, p_o_p_end = np.array(pop, dtype=np.float64),np.array(pop_center, dtype=np.float64),np.array(pop_end, dtype=np.float64)
     pp = 0
     # plot_2dmesh(V, mesh, u_n, pg)
@@ -255,11 +255,13 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
             pop1, y2, p2 = gather_and_sort(pop1, y2, p2, mesh)
             pop2, y3, p3 = gather_and_sort(pop2, y3, p3, mesh)
             if mesh.comm.rank == 0:
+                print("y1 shape: ",y1.shape[0], " y2 shape: ", y2.shape[0], " center: ", center_height, " y3shape: ",y3.shape[0])
                 y_grid = np.linspace(0,height,y1.shape[0])
                 y_grid2 = np.linspace(0,center_height,y2.shape[0])
+                y_grid3 = np.linspace(0,height,y3.shape[0])
                 flux = np.array([np.trapz(y=y1[:,0],x=y_grid),
                        np.trapz(y=y2[:,0],x=y_grid2), 
-                       np.trapz(y=y3[:,0],x=y_grid)])
+                       np.trapz(y=y3[:,0],x=y_grid3)])
                 print("flux: ",flux, " flux_mean: ", np.mean(mfl1))
                 store_array(flux, "flux_trapz", pat, p, t)
                 store_array(mfl1, "massflowrate", pat,p,t)

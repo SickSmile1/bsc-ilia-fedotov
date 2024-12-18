@@ -17,12 +17,12 @@ def parse_arguments():
     return parser.parse_args()
 
 def run_iterative(comm, save, tol):
-    p_old, pop = run_sim(comm, height=1, length=10,pres=8,T=.8,num_steps=1000, save=1, tol=.05, 
+    p_old, pop = run_sim(comm, height=1, length=10,pres=2,T=.8,num_steps=1000, save=1, tol=.05, 
                          mesh_created=False, meshed=None, new_membrane=True)
-    for i in range(1,20):
-        if np.max(p_old)+i >80:
+    for i in range(1,10):
+        if np.max(p_old)+i >20:
             break
-        p_old, pop = run_sim(comm, height=1, length=10,pres=8,T=.8,num_steps=1000, save=1, tol=.05, 
+        p_old, pop = run_sim(comm, height=1, length=10,pres=2,T=.8,num_steps=1000, save=1, tol=.05, 
              mesh_created=False, meshed=None, new_membrane=False, p_old=p_old, pg=np.max(p_old)+i)
     """
     Run simulations for a range of radii and pressures.
