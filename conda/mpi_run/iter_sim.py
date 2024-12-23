@@ -14,61 +14,16 @@ import numpy as np
 from mpi4py import MPI
 
 from dx_utils import (create_obst, gather_and_sort, get_pop_cells, write_x_parview, store_array, init_db,
-                    write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells, pops_cells)
+                    write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells, pops_cells, zetta, store_gmsh)
 
 import matplotlib.pyplot as plt
 
 
-def zetta(p0, pl, pg, L=2,T=60, x=np.linspace(0,2,100)):
-    """
-    Calculate the zetta value for a given location in a membrane canal.
-
-    This function computes the zetta value based on the pressures at different points
-    of a membrane and the location within the canal.
-
-    Parameters:
-    -----------
-    T : float
-        The stiffness of the membrane
-    p0 : float
-        The pressure at the beginning of the membrane.
-    pl : float
-        The pressure at the end of the membrane.
-    pg : float
-        The outer pressure of the membrane.
-    L : float
-        The length of the membrane.
-    x : float
-        The location in the canal for which to calculate zetta.
-
-    Returns:
-    --------
-    float
-        The calculated zetta value at the given location.
-
-    Notes:
-    ------
-    The function uses the following formula:
-    zetta = 1/T * (1/2 * (pg - p0) * x**2 + pd/(6*L) * x**3 - 1/6 * (3*pg - 2*p0 - pl)* L* x)
-    where pd = p0 - pl
-
-    The constant T is not defined in the function and should be provided or defined elsewhere.
-
-    Example:
-    --------
-    >>> zetta(100, 80, 120, 10, 5)
-    # Returns the zetta value at the midpoint of a 10-unit long membrane
-    """
-    assert (p0<pg)
-    pd = p0-pl
-    return 1/T * (1/2 * (pg - p0) * x**2 + pd/(6*L) * x**3 - 1/6 * (3*pg - 2*p0 - pl)* L * x )
-
 def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
     #comm,H=1, L=3,r=.3, Ox=1.5, lc=.07
     def define_membrane(factory, begin, end, l1, lc1,L):
-        memb = -zetta(p0, pl, pg)*.01
-        memb += 1
-        memb = memb.round(3)
+        memb = zetta(p0, pl, pg,2,280)
+        #memb = memb.round(3)
         startpoint = L/2-L/10
         lines = []
         points = []
@@ -137,14 +92,14 @@ def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
         gmsh.option.setNumber("Mesh.ElementOrder", 1)
         gmsh.option.setNumber("Mesh.RecombineAll", 0)
         gmsh.model.mesh.generate(2)
-        gmsh.write("mesh.msh")
+        #gmsh.write("mesh.msh")
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
     upper = comm.bcast(upper, root=0)
     lower = comm.bcast(lower, root=0)
     gmsh.model = comm.bcast(gmsh.model, root=0)
     mesh, ct, ft = gmshio.model_to_mesh(gmsh.model, comm, model_rank,gdim=2)
-    return mesh, ct, ft, infl, outfl, upper, lower
+    return gmsh.model, mesh, ct, ft, infl, outfl, upper, lower
 
 def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.03, mesh_created=False, meshed=None, new_membrane=False, p_old=None, pg=None):
     # set obstacle location to center
@@ -164,9 +119,10 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     mesh, vtx_u, vtx_p = None, None, None
     # manually create mesh
     if new_membrane:
-        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, first=True)
+        model, mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, first=True)
     elif not new_membrane: #comm,H, L, lc,p0, pl, pg, first=False
-        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, tol, p_old[0], p_old[-1], pg, first=False)
+        print("p0 ",p_old[0],"\npl: ", p_old[-1],"\npg: ", pg)
+        model, mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, tol, p_old[0], p_old[-1], pg, first=False)
     else:
         print("no mesh provided")
         return 0
@@ -304,6 +260,8 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
         p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, Ox, tol],
                                                          ["height", "length", "pressure_delta", "simulation_time", 
                                                            "steps", "obstacle_location_x","meshing_size/tol"]))
+        store_gmsh(model, "mesh", path, p)
+        
     if new_membrane:
         x = np.linspace(length/2-1, length/2+1, 100)
         y = np.ones(100)-.05
@@ -429,8 +387,8 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     solver3.destroy()
     return pp
 
-if __name__ == "__main__":
+"""if __name__ == "__main__":
     comm = MPI.COMM_WORLD
     #un_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.03, mesh_created=False, meshed=None, new_membrane=False, p_old=None, pg=None):
     p_old = run_sim(comm, height=1, length=10,pres=20,T=1,num_steps=500, save=1, tol=.02, mesh_created=False, meshed=None, new_membrane=True)
-    print(p_old)
+    print(p_old)"""

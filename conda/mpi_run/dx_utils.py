@@ -159,7 +159,7 @@ def zetta(p0, pl, pg, L=2,T=30, num=100):
     # Returns the zetta value at the midpoint of a 10-unit long membrane
     """
     x = np.linspace(0,2,num)
-    print("p0: ",p0, " pg: ",pg)
+    print("p0: ",p0, " pg: ",pg, " pl: ",pl)
     assert (p0<pg)
     pd = p0-pl
     res = 1/T * (1/2 * (pg - p0) * x**2 + pd/(6*L) * x**3 - 1/6 * (3*pg - 2*p0 - pl)* L * x )
@@ -309,14 +309,14 @@ def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
     upper = comm.bcast(upper, root=0)
     lower = comm.bcast(lower, root=0)
     gmsh.model = comm.bcast(gmsh.model, root=0)
-    gmsh.write(f"mesh_r{r:.1f}.msh")
+    #gmsh.write(f"mesh_r{r:.1f}.msh")
     mesh, ct, ft = gmshio.model_to_mesh(gmsh.model, comm, model_rank,gdim=2)
-    return mesh, ct, ft, infl, outfl, upper, lower
+    return gmsh.mode, mesh, ct, ft, infl, outfl, upper, lower
 
 def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
     #comm,H=1, L=3,r=.3, Ox=1.5, lc=.07
     def define_membrane(factory, begin, end, l1, lc1,L):
-        memb = zetta(p0, pl, pg)
+        memb = zetta(p0, pl, pg,2,280)
         startpoint = (L/2)-(L/10)
         endpoint = (L/2)+(L/10)
         x = np.linspace(startpoint, endpoint, 100)
@@ -394,13 +394,22 @@ def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
     lower = comm.bcast(lower, root=0)
     gmsh.model = comm.bcast(gmsh.model, root=0)
     mesh, ct, ft = gmshio.model_to_mesh(gmsh.model, comm, model_rank,gdim=2)
-    return mesh, ct, ft, infl, outfl, upper, lower
+    return gmsh, mesh, ct, ft, infl, outfl, upper, lower
 
 def write_x_parview(msh,ct,ft, name):
     with XDMFFile(msh.comm, f"out_gmsh/mesh_rank_{MPI.COMM_WORLD.rank}.xdmf", "w") as file:
         file.write_mesh(msh)
         file.write_meshtags(ct, msh.geometry, geometry_xpath=f"/Xdmf/Domain/Grid[@Name='{name}_ct']/Geometry")
         file.write_meshtags(ft, msh.geometry, geometry_xpath=f"/Xdmf/Domain/Grid[@Name='{name}_ft']/Geometry")
+
+def store_gmsh(model, name, path, p, db="dtool_db"):
+    if model is not None:
+        fpath = path+"/data/"
+        utils.mkdir_parents(fpath)
+        model.write(fpath+name+".msh")
+    else:
+        print("DEBUG: dx_utils/store_gmsh()\nModel is None!")
+    # print(f"Dataset '{name:s}' saved at {fpath:s}")
 
 def store_array(arr, name, path, p, t, db="dtool_db"):
     """

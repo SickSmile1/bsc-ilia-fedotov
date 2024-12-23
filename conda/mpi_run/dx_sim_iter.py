@@ -13,7 +13,7 @@ import numpy as np
 
 from dx_utils import (create_obst, gather_and_sort, get_pop_cells, write_x_parview, store_array, init_db,
                     write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells, pops_cells, 
-                      plot_2dmesh, zetta, update_membrane_mesh)
+                      plot_2dmesh, zetta, update_membrane_mesh, store_gmsh)
 
 import matplotlib.pyplot as plt
 
@@ -22,7 +22,7 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     # set obstacle location to center
     Ox = length/2
     # disable saving to .bp file
-    file = True
+    file = False
     # breaking condition for mpi
     break_flag = False
     """if run==0:
@@ -36,9 +36,10 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     mesh, vtx_u, vtx_p = None, None, None
     # manually create mesh
     if new_membrane:
-        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, first=True)
+        model,mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, first=True)
     elif not new_membrane: #comm,H, L, lc,p0, pl, pg, first=False
-        mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, tol, np.max(p_old), np.min(p_old), pg, first=False)
+        print("p0 ",p_old[0],"\npl: ", p_old[-1],"\npg: ", pg)
+        model,mesh, ct, ft, inlet_marker,outlet_marker, upper_wall_marker, lower_wall_marker = update_membrane_mesh(comm,height, length, tol, np.max(p_old), np.min(p_old), pg, first=False)
     else:
         print("no mesh provided")
         return 0
@@ -170,20 +171,23 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     if mesh.comm.rank==0 and save:
         # initialize dtool dataset
         if new_membrane == True:
-            p, pat = init_db(f"iterative_canal_{pres:.1f}", False)
-        else:
-            pr = p_old[-1]
-            p, pat = init_db(f"iterative_canal_{float(pr):.1f}_{pres:.1f}", False)
-        p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, Ox, tol],
+            p, pat = init_db(f"iterative_canal_0.0_{pres:.1f}", False)
+            p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, Ox, tol, 0, 0, pg,280,500],
                                                          ["height", "length", "pressure_delta", "simulation_time", 
-                                                           "steps", "obstacle_location_x","meshing_size/tol"]))
+                                                           "steps", "obstacle_location_x","meshing_size/tol","p0","pl","pg","membrane_factor","accuracy zetta"]))
+        else:
+            p, pat = init_db(f"iterative_canal_{float(pg):.1f}_{pres:.1f}", False)
+            p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, Ox, tol, np.max(p_old), np.min(p_old), pg,280,500],
+                                                         ["height", "length", "pressure_delta", "simulation_time", 
+                                                           "steps", "obstacle_location_x","meshing_size/tol","p0","pl","pg","membrane_factor","accuracy zetta"]))
+        store_gmsh(model, "mesh", pat, p)
 
     
     x = np.linspace(length/2-1, length/2+1, 500)
     if new_membrane==True:
         y = np.ones(500)-.05
     else:
-        y = zetta(np.max(p_old), np.min(p_old), pg, num=500)
+        y = zetta(np.max(p_old), np.min(p_old), pg,2,280, num=500)
         y -= .05
     r = np.vstack((x, y, np.zeros(x.size)))
     center_height = np.min(y)
@@ -193,9 +197,9 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     #print(press_pop, r)
     press_p_o_p = np.array(press_pop, dtype=np.float64)
     # calculate pressure/velocity at different cross-sections
-    pop, cell = get_pop_cells(height, length/2-1.05, mesh)
-    pop_center, cell_center = get_pop_cells(center_height-0.05, Ox, mesh)
-    pop_end, cell_end = get_pop_cells(height, length/2+1.05, mesh)
+    pop, cell = get_pop_cells(height, length/2-1, mesh)
+    pop_center, cell_center = get_pop_cells(center_height, Ox, mesh)
+    pop_end, cell_end = get_pop_cells(height, length/2+1, mesh)
     p_o_p, p_o_p_center, p_o_p_end = np.array(pop, dtype=np.float64),np.array(pop_center, dtype=np.float64),np.array(pop_end, dtype=np.float64)
     pp = 0
     # plot_2dmesh(V, mesh, u_n, pg)
@@ -266,7 +270,7 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
                 store_array(flux, "flux_trapz", pat, p, t)
                 store_array(mfl1, "massflowrate", pat,p,t)
                 store_array(y1,  "y_at_0", pat,p,t)
-                store_array(y2,  "y_at_5", pat,p,t)
+                store_array(y2,  f"y_at_5_{center_height:.1f}", pat,p,t)
                 store_array(y3,  "y_at_1", pat,p,t)
                 store_array(p1,  "p_at_0", pat,p,t)
                 store_array(p2,  "p_at_5", pat,p,t)
@@ -292,8 +296,8 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
             if break_flag or i==(num_steps-1):
                 pp = mesh.comm.bcast(pp, root=0)
                 pop_p = mesh.comm.bcast(pop_p, root=0)
-            if break_flag:
-                break
+            #if break_flag:
+            #    break
     if mesh.comm.rank == 0 and save:
         p.freeze()
         
