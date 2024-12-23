@@ -7,8 +7,8 @@
     "steps": 1000,
     "obstacle_location_x": 5.0,
     "meshing_size/tol": 0.03,
-    "p0": 480.71731760835354,
-    "pl": 137.80952153968045,
+    "p0": 485.9221755139846,
+    "pl": 132.47597247898662,
     "pg": 560,
     "membrane_factor": 280,
     "accuracy zetta": 500
