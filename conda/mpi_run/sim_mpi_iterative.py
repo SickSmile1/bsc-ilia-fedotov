@@ -17,9 +17,9 @@ def parse_arguments():
     return parser.parse_args()
 
 def run_iterative(comm, save, tol):
-    pres = 70
+    pres = 66
     min_pres = pres-15
-    pg_pres = 68
+    pg_pres = 64
     p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.8,num_steps=1000, save=1, tol=.05, 
                          mesh_created=False, meshed=None, new_membrane=True)
     while pg_pres > min_pres:      

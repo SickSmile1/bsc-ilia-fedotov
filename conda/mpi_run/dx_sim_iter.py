@@ -22,7 +22,7 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     # set obstacle location to center
     Ox = length/2
     # disable saving to .bp file
-    file = False
+    file = True
     # breaking condition for mpi
     break_flag = False
     """if run==0:
@@ -154,7 +154,7 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
         print("<< formulated function and solvers >>")
     if file:
         from pathlib import Path
-        folder = Path(f"results_{pres}/")
+        folder = Path(f"results_{pres}_{pg}/")
         folder.mkdir(exist_ok=True, parents=True)
         vtx_u = VTXWriter(mesh.comm, folder / "poiseuille_u.bp", u_n, engine="BP4")
         vtx_p = VTXWriter(mesh.comm, folder / "poiseuille_p.bp", p_n, engine="BP4")
