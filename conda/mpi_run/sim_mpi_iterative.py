@@ -17,15 +17,16 @@ def parse_arguments():
     return parser.parse_args()
 
 def run_iterative(comm, save, tol):
-    pres = 66
-    min_pres = pres-15
-    pg_pres = 64
-    p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.8,num_steps=1000, save=1, tol=.05, 
-                         mesh_created=False, meshed=None, new_membrane=True)
-    while pg_pres > min_pres:      
-        p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.8,num_steps=1000, save=1, tol=.03, 
-             mesh_created=False, meshed=None, new_membrane=False, p_old=p_old, pg=(pg_pres*10) )#np.max(p_old)+i)
-        pg_pres -= 2
+    for pres in (61.25, 62.5 , 63.75, 65.): #np.linspace(55, 65, 9, endpoint=True):
+        #pres = 66
+        min_pres = pres-6
+        pg_pres = 100
+        p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.4,num_steps=1000, save=1, tol=.02, 
+                             mesh_created=False, meshed=None, new_membrane=True)
+        while pg_pres > min_pres:      
+            p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.4,num_steps=1000, save=1, tol=.02, 
+                 mesh_created=False, meshed=None, new_membrane=False, p_old=p_old, pg=(pg_pres*10) )#np.max(p_old)+i)
+            pg_pres -= 5
     """
     Run simulations for a range of radii and pressures.
 

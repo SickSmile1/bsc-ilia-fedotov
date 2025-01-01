@@ -1,0 +1,12 @@
+[
+  {
+    "height": 1,
+    "length": 10,
+    "pressure_delta": 60,
+    "simulation_time": 3,
+    "steps": 3000,
+    "radius": 0.3,
+    "obstacle_location_x": 5,
+    "meshing_size/tol": 0.03
+  }
+]

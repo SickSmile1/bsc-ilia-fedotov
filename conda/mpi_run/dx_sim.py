@@ -61,9 +61,9 @@ def run_sim(comm, height=1, length=3,pres=8,T=.5,num_steps=500,r=0, save=False, 
     u_noslip = np.array((0,) * mesh.geometry.dim, dtype=PETSc.ScalarType)
     bc_noslip1 = dirichletbc(u_noslip, wall_dofs, V)
 
-    wall_dofs = locate_dofs_topological(V, fdim, ft.find(lower_wall_marker))
+    wall_dofs1 = locate_dofs_topological(V, fdim, ft.find(lower_wall_marker))
     u_noslip = np.array((0,) * mesh.geometry.dim, dtype=PETSc.ScalarType)
-    bc_noslip2 = dirichletbc(u_noslip, wall_dofs, V)
+    bc_noslip2 = dirichletbc(u_noslip, wall_dofs1, V)
     
     inflow_dofs = locate_dofs_topological(Q, fdim, ft.find(inlet_marker))
     bc_inflow = dirichletbc(PETSc.ScalarType(pres), inflow_dofs, Q)

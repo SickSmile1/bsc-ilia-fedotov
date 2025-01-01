@@ -76,20 +76,28 @@ def gather_and_sort(pop, u_val, p_val, mesh):
     all_u_val = mesh.comm.gather(u_val, root=0)
     all_p_val = mesh.comm.gather(p_val, root=0)
     if mesh.comm.rank == 0:
-        comb_pop = [arr for arr in all_pop if arr is not None]
-        comb_u_val = [arr for arr in all_u_val if arr is not None]
-        comb_p_val = [arr for arr in all_p_val if arr is not None]
-        # Combine gathered data
-        combined_pop = np.concatenate(comb_pop)
-        combined_u_val = np.concatenate(comb_u_val)
-        combined_p_val = np.concatenate(comb_p_val)
-
-        # Create a sorting index based on u_val[:,0]
-        sort_index = np.argsort(combined_pop[:, 0])
-        # Sort all arrays using this index
-        sorted_pop = combined_pop[sort_index]
-        sorted_u_val = combined_u_val[sort_index]
-        sorted_p_val = combined_p_val[sort_index]
+        if len(all_pop) < 90:
+            comb_pop = [arr for arr in all_pop if arr is not None]
+            comb_u_val = [arr for arr in all_u_val if arr is not None]
+            comb_p_val = [arr for arr in all_p_val if arr is not None]
+            # Combine gathered data
+            combined_pop = np.concatenate(comb_pop)
+            combined_u_val = np.concatenate(comb_u_val)
+            combined_p_val = np.concatenate(comb_p_val)
+    
+            # Create a sorting index based on u_val[:,0]
+            sort_index = np.argsort(combined_pop[:, 1])
+            #print("\n0:",combined_pop[:,0],"\n1:", combined_pop[:,1],"\ncombpopsize",combined_pop.shape)
+            #print("\n0 u_val:",combined_u_val[:,0],"\n1 u_val:", combined_u_val[:,1],"\size",combined_u_val.shape)
+            #print("\n0:p_val",combined_p_val[:,0],"\n1:","\ncombpopsize",combined_p_val.shape)
+            # Sort all arrays using this index
+            sorted_pop = combined_pop[sort_index]
+            sorted_u_val = combined_u_val[sort_index]
+            sorted_p_val = combined_p_val[sort_index]
+        else:
+            sorted_pop = all_pop
+            sorted_u_val = all_u_val
+            sorted_p_val = all_p_val
     pop_res = mesh.comm.bcast(sorted_pop, root=0)    
     uval_res = mesh.comm.bcast(sorted_u_val, root=0)    
     pval_res = mesh.comm.bcast(sorted_p_val, root=0)    
@@ -300,9 +308,9 @@ def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
 
         gmsh.model.addPhysicalGroup(2, [16], tag=5, name="Domain")
         factory.synchronize()
-        gmsh.option.setNumber("Mesh.ElementOrder", 1)
-        gmsh.option.setNumber("Mesh.RecombineAll", 0)
-        gmsh.option.setNumber("Mesh.Algorithm", 6)
+        #gmsh.option.setNumber("Mesh.ElementOrder", 1)
+        #gmsh.option.setNumber("Mesh.RecombineAll", 0)
+        #gmsh.option.setNumber("Mesh.Algorithm", 6)
         gmsh.model.mesh.generate(2)
     infl = comm.bcast(infl, root=0)
     outfl = comm.bcast(outfl, root=0)
@@ -316,7 +324,7 @@ def create_obst(comm,H=1, L=3,r=.3, Ox=1.5, lc=.07):
 def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
     #comm,H=1, L=3,r=.3, Ox=1.5, lc=.07
     def define_membrane(factory, begin, end, l1, lc1,L):
-        memb = zetta(p0, pl, pg,2,280)
+        memb = zetta(p0, pl, pg,2,1000)
         startpoint = (L/2)-(L/10)
         endpoint = (L/2)+(L/10)
         x = np.linspace(startpoint, endpoint, 100)
@@ -384,8 +392,8 @@ def update_membrane_mesh(comm,H, L, lc=.03, p0=0, pl=0, pg=0, first=False):
         
         gmsh.model.addPhysicalGroup(dim=2, tags=[surface], tag=5, name="Domain")
         factory.synchronize()
-        gmsh.option.setNumber("Mesh.ElementOrder", 1)
-        gmsh.option.setNumber("Mesh.RecombineAll", 0)
+        #gmsh.option.setNumber("Mesh.ElementOrder", 1)
+        #gmsh.option.setNumber("Mesh.RecombineAll", 0)
         gmsh.model.mesh.generate(2)
         #gmsh.write(f"mesh_{pg:.1f}.msh")
     infl = comm.bcast(infl, root=0)

@@ -18,11 +18,11 @@ from dx_utils import (create_obst, gather_and_sort, get_pop_cells, write_x_parvi
 import matplotlib.pyplot as plt
 
 
-def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.03, mesh_created=False, meshed=None, new_membrane=False, p_old=None, pg=0):
+def run_sim(comm, height=1, length=10,pres=20,T=.4,num_steps=500, save=1, tol=.03, mesh_created=False, meshed=None, new_membrane=False, p_old=None, pg=0):
     # set obstacle location to center
     Ox = length/2
     # disable saving to .bp file
-    file = True
+    file = False
     # breaking condition for mpi
     break_flag = False
     """if run==0:
@@ -177,7 +177,7 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
                                                            "steps", "obstacle_location_x","meshing_size/tol","p0","pl","pg","membrane_factor","accuracy zetta"]))
         else:
             p, pat = init_db(f"iterative_canal_{float(pg):.1f}_{pres:.1f}", False)
-            p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, Ox, tol, np.max(p_old), np.min(p_old), pg,280,500],
+            p.put_annotation("metadata", write_values_to_json([height, length, pres, T, num_steps, Ox, tol, np.max(p_old), np.min(p_old), pg,1000,500],
                                                          ["height", "length", "pressure_delta", "simulation_time", 
                                                            "steps", "obstacle_location_x","meshing_size/tol","p0","pl","pg","membrane_factor","accuracy zetta"]))
         store_gmsh(model, "mesh", pat, p)
@@ -185,10 +185,9 @@ def run_sim(comm, height=1, length=10,pres=20,T=.8,num_steps=1000, save=1, tol=.
     
     x = np.linspace(length/2-1, length/2+1, 500)
     if new_membrane==True:
-        y = np.ones(500)-.05
+        y = np.ones(500)
     else:
-        y = zetta(np.max(p_old), np.min(p_old), pg,2,280, num=500)
-        y -= .05
+        y = zetta(np.max(p_old), np.min(p_old), pg,2,1000, num=500)
     r = np.vstack((x, y, np.zeros(x.size)))
     center_height = np.min(y)
     # calculate pressure at membrane
