@@ -21,10 +21,10 @@ def run_iterative(comm, save, tol):
         #pres = 66
         min_pres = pres-6
         pg_pres = 100
-        p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.4,num_steps=1000, save=1, tol=.02, 
+        p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.7,num_steps=1000, save=1, tol=.04, 
                              mesh_created=False, meshed=None, new_membrane=True)
         while pg_pres > min_pres:      
-            p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.4,num_steps=1000, save=1, tol=.02, 
+            p_old, pop = run_sim(comm, height=1, length=10,pres=pres,T=.4,num_steps=1000, save=1, tol=.04, 
                  mesh_created=False, meshed=None, new_membrane=False, p_old=p_old, pg=(pg_pres*10) )#np.max(p_old)+i)
             pg_pres -= 5
     """

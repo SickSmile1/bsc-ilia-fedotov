@@ -64,12 +64,12 @@ def zetta(T, p0, pl, pg, L, x):
 
 # %%
 #zetta(T, p0, pl, pg, L, x):
-for i in np.linspace(401,501,10):
+for i in np.linspace(651,1300,10):
     x = np.linspace(0,2,10)
-    memb = zetta(64, 350, 200, i, 2, x)*.5
+    memb = zetta(1000, 330, 220, i, 2, x)
     memb += 1
     plt.plot(x,memb,label=f"{i}")
-plt.legend()
+plt.legend(frameon=False)
 plt.show()
 
 print(x[0], x[-1])
@@ -81,7 +81,7 @@ print(x[0], x[-1])
 
 def define_membrane(factory, begin, end, l1, lc1,L):
     x = np.linspace(0,2,100)
-    memb = -zetta(1, 1.2553851318e+03, 6.2760372899e+02, .8553851318e+03, 2, x)*.01
+    memb = zetta(250, .8553851318e+03, 6.2760372899e+02, 1.0553851318e+03, 2, x)
     memb += 1
     memb = memb.round(3)
     startpoint = L/2-L/10
@@ -106,7 +106,7 @@ infl, outfl, upper, lower = [],[],[],[]
 gmsh.initialize()
 gmsh.model.add("canal")
 #gmsh.option.setNumber("Geometry.Tolerance", 1e-8)
-gmsh.option.setNumber("Mesh.CharacteristicLengthFactor", 1)
+#gmsh.option.setNumber("Mesh.CharacteristicLengthFactor", 1)
 
 cm = 1 # e-02 # not needed for our sim
 h1 = H * cm
@@ -148,6 +148,13 @@ outfl = model.addPhysicalGroup(dim=1, tags=[outflow_line], tag=2, name="outflow"
 infl = model.addPhysicalGroup(dim=1, tags=[inflow_line], tag=3, name="inflow")
 lower = model.addPhysicalGroup(dim=1, tags=[lower_wall], tag=4, name="lower_wall")
 
+"""
+gmsh.model.mesh.setTransfiniteCurve(upper_wall_right, 40)
+gmsh.model.mesh.setTransfiniteCurve(upper_wall_left, 40)
+gmsh.model.mesh.setTransfiniteCurve(outflow_line, 10)
+gmsh.model.mesh.setTransfiniteCurve(inflow_line, 10)
+gmsh.model.mesh.setTransfiniteCurve(lower_wall, 100)"""
+
 gmsh.model.addPhysicalGroup(dim=2, tags=[surface], tag=5, name="Domain")
 factory.synchronize()
 gmsh.option.setNumber("Mesh.ElementOrder", 1)
@@ -166,10 +173,36 @@ gmsh.write("mesh.msh")
 gmsh.finalize()
 
 # %%
-# gmsh.model.addPhysicalGroup?
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+mpl.rcParams.update({
+    "font.sans-serif": ["Arial"],
+    "font.cursive": ["Arial"],
+    "font.family": "serif",
+    "font.serif": ["Arial"],
+    "font.size": 14,
+    "xtick.labelsize": 11,
+    "ytick.labelsize": 11,
+    "legend.fontsize": 14,
+    "svg.fonttype": "none"
+})
+
+def ret_fig_ax(rows=1, cols=1):
+    fig_width_pt = 448.13095  # Replace with your document's text width
+    inches_per_pt = 1 / 72.27
+    fig_width_in = fig_width_pt * inches_per_pt
+    fig, ax = plt.subplots(rows,cols, figsize=( fig_width_in*2, fig_width_in )) #, sharey=True)
+    #ax.set_aspect('equal')
+    return fig, ax
+
 
 # %%
-import matplotlib.pyplot as plt
+fig,ax = ret_fig_ax()
+
+x = np.linspace(0,2,11)
+memb = zetta(250, .8553851318e+03, 6.2760372899e+02, 1.0553851318e+03, 2, x)
+memb += 1
 
 # Get mesh data
 nodes = gmsh.model.mesh.getNodes()
@@ -180,12 +213,47 @@ triangles = elements[2][1].reshape(-1, 3) - 1
 x = nodes[1].reshape(-1, 3)[:, 0]
 y = nodes[1].reshape(-1, 3)[:, 1]
 
-# Plot the mesh
-plt.figure()
-plt.triplot(x, y, triangles)
-plt.ylim(-.1,1.1)
-plt.xlim(3,7)
+# show boundaries
+bound_arr = np.concatenate((np.linspace(0,4,41), np.linspace(6,10,41) ))
+ax.scatter(bound_arr, np.ones(bound_arr.size), color="red") # top wall
+ax.scatter(np.linspace(0,10,101), np.zeros_like(( np.linspace(0,10,101) )), color="purple", label="bottom") # bot wall
+ax.scatter(np.linspace(4,6,11),memb, color="red", label="top")
+
+sliced = np.linspace(.1,.9,9)
+ax.scatter(np.ones(sliced.size)*3.1, sliced, color="green", label="in") # in
+ax.scatter(np.ones(sliced.size)*6.9, sliced, color="blue", label="out" ) # in
+ax.legend(bbox_to_anchor=(1.0, 0.96), loc='upper left',frameon=False,handlelength=.5)
+ax.triplot(x, y, triangles)
+#plt.ylim(-.1,1.1)
+ax.set_xlim(3,7)
+ax.set_xlabel(r'$\bar{x}$ [H]')
+ax.set_ylabel(r'$\bar{y}$ [H]')
 #plt.axis('equal')
+fig.savefig("mesh.pdf", dpi=300)
 plt.show()
+
+# %%
+print(memb)
+
+# %%
+np.linspace(55, 65, 9, endpoint=True)
+
+# %%
+p_arr = np.linspace(12,200,15)
+
+def calc_press(parr, L, x):
+    return parr*(L-x)
+
+print(calc_press(p_arr, 10, 5))
+
+# %%
+p_arr = np.linspace(12,200,15)
+height = np.linspace(0,1,100)
+def calc_velo(delta_p,y):
+    delta_p = np.array(delta_p).reshape(-1, 1)
+    return (1/2*delta_p*y )*(1-y)
+res = calc_velo(p_arr,0.5)
+res1 = calc_velo(p_arr,height)
+np.trapezoid(res1[14], height)
 
 # %%
