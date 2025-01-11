@@ -11,7 +11,7 @@ from ufl import (FacetNormal, Identity, TestFunction, TrialFunction,
 from dolfinx.io import VTXWriter
 import numpy as np
 
-from dx_utils import (create_obst, gather_and_sort, get_pop_cells, write_x_parview, store_array, init_db,
+from dx_utils import (create_obst, gather_and_sort_try, gather_and_sort, get_pop_cells, write_x_parview, store_array, init_db,
                     write_values_to_json, mfl_press, get_unsorted_arrays,get_pop_cells, pops_cells, 
                       plot_2dmesh, zetta, update_membrane_mesh, store_gmsh)
 
@@ -245,7 +245,7 @@ def run_sim(comm, height=1, length=10,pres=20,T=.4,num_steps=500, save=1, tol=.0
             vtx_u.write(t)
             vtx_p.write(t)
         # write data to dataset
-        if (i !=0 and i!=1 and (i%200)==0): # and comm.rank == 0:
+        if (i !=0 and i!=1 and (i%100)==0): # and comm.rank == 0:
             mfl1, _ = mfl_press(mesh.comm,length, mesh, None, u_n, p_n)
             flux, mfl = None, None
             # print("\n<<--    this is pn     -->>",p_n.x.array[:])
@@ -253,10 +253,10 @@ def run_sim(comm, height=1, length=10,pres=20,T=.4,num_steps=500, save=1, tol=.0
             pop, y1, p1 = get_unsorted_arrays(p_o_p, cell, u_n, p_n)
             pop1, y2, p2 = get_unsorted_arrays(p_o_p_center, cell_center, u_n, p_n)
             pop2, y3, p3 = get_unsorted_arrays(p_o_p_end, cell_end, u_n, p_n)
-            pop_p, yp, pp = gather_and_sort(pop_p, yp, pp, mesh)
-            pop, y1, p1 = gather_and_sort(pop, y1, p1, mesh)
-            pop1, y2, p2 = gather_and_sort(pop1, y2, p2, mesh)
-            pop2, y3, p3 = gather_and_sort(pop2, y3, p3, mesh)
+            pop_p, yp, pp = gather_and_sort_try(pop_p, yp, pp, mesh)
+            pop, y1, p1 = gather_and_sort_try(pop, y1, p1, mesh)
+            pop1, y2, p2 = gather_and_sort_try(pop1, y2, p2, mesh)
+            pop2, y3, p3 = gather_and_sort_try(pop2, y3, p3, mesh)
             if mesh.comm.rank == 0:
                 print("y1 shape: ",y1.shape[0], " y2 shape: ", y2.shape[0], " center: ", center_height, " y3shape: ",y3.shape[0])
                 y_grid = np.linspace(0,height,y1.shape[0])

@@ -68,6 +68,55 @@ def pops_cells(points, mesh):
                 cell.append(colliding_cells.links(i)[0])
         return pop, cell
 
+def gather_and_sort_try(pop, u_val, p_val, mesh):
+    # Gather data from all ranks
+    all_pop = mesh.comm.gather(pop, root=0)
+    all_u_val = mesh.comm.gather(u_val, root=0)
+    all_p_val = mesh.comm.gather(p_val, root=0)
+    
+    if mesh.comm.rank == 0:
+        if len(all_pop) < 90:
+            # Filter out None values
+            comb_pop = [arr for arr in all_pop if arr is not None]
+            comb_u_val = [arr for arr in all_u_val if arr is not None]
+            comb_p_val = [arr for arr in all_p_val if arr is not None]
+            
+            # Ensure all arrays have the same number of dimensions
+            max_dim = max(arr.ndim for arr in comb_u_val + comb_p_val)
+            comb_u_val = [np.atleast_2d(arr) if arr.ndim < max_dim else arr for arr in comb_u_val]
+            comb_p_val = [np.atleast_2d(arr) if arr.ndim < max_dim else arr for arr in comb_p_val]
+            
+            try:
+                # Combine gathered data
+                combined_pop = np.concatenate(comb_pop)
+                combined_u_val = np.concatenate(comb_u_val)
+                combined_p_val = np.concatenate(comb_p_val)
+                
+                # Create a sorting index based on combined_pop[:, 1]
+                sort_index = np.argsort(combined_pop[:, 1])
+                
+                # Sort all arrays using this index
+                sorted_pop = combined_pop[sort_index]
+                sorted_u_val = combined_u_val[sort_index]
+                sorted_p_val = combined_p_val[sort_index]
+            except ValueError as e:
+                print(f"Error during concatenation or sorting: {e}")
+                # If concatenation fails, return the original data
+                sorted_pop, sorted_u_val, sorted_p_val = comb_pop, comb_u_val, comb_p_val
+        else:
+            sorted_pop = all_pop
+            sorted_u_val = all_u_val
+            sorted_p_val = all_p_val
+    else:
+        sorted_pop = sorted_u_val = sorted_p_val = None
+
+    # Broadcast results to all processes
+    pop_res = mesh.comm.bcast(sorted_pop, root=0)    
+    uval_res = mesh.comm.bcast(sorted_u_val, root=0)    
+    pval_res = mesh.comm.bcast(sorted_p_val, root=0)    
+    
+    return pop_res, uval_res, pval_res
+
 def gather_and_sort(pop, u_val, p_val, mesh):
     # Gather data from all ranks
     pop_res, uval_res, pval_res = None, None, None
