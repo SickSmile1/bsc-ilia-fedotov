@@ -1,0 +1,16 @@
+[
+  {
+    "height": 1,
+    "length": 10,
+    "pressure_delta": 612.5,
+    "simulation_time": 0.8,
+    "steps": 1000,
+    "obstacle_location_x": 5.0,
+    "meshing_size/tol": 0.02,
+    "p0": 407.60220021852496,
+    "pl": 207.11260046790755,
+    "pg": 650,
+    "membrane_factor": 1000,
+    "accuracy zetta": 500
+  }
+]
