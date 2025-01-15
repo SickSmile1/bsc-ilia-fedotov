@@ -17,7 +17,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def run_iterative(comm, save, tol):
-    for pres in np.linspace(60, 55, 5, endpoint=True):
+    for pres in np.linspace(65, 61.25, 4, endpoint=True):
         #pres = 66
         min_pres = pres-6
         pg_pres = 100

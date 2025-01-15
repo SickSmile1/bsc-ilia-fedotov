@@ -1,0 +1,16 @@
+TODO
+obstacle picture
+define labels (what is r? what is min?)
+
+motivation: especially sentence
+-> something that relates to functionality of fluidics channel to its special geometry - passive fluids control
+https://www.google.com/search?client=firefox-b-d&sca_esv=8163c2af6eb88bc3&sxsrf=ADLYWIJUQ_lD4eKviJicYNrlXziwR6STuQ:1736520492258&q=inertial+focusing+in+microfluidic+channels&udm=2&fbs=AEQNm0A6bwEop21ehxKWq5cj-cHa02QUie7apaStVTrDAEoT1CkRGSL-1wA3X2bR5dRYtRGv3dh0WX48pQ0OijG3Ir_Ily36WNjIM66TUeQQm6v5pCxPr2gtqfjkC7ffv6Tr7pov6Kj4r20q4qdHCSHuZ8l9l_oCqEwoxOcaGtTQ9oNU0Tr95ug&sa=X&ved=2ahUKEwjX-df4suuKAxXR-gIHHTGOG-AQtKgLegQIGBAB&biw=1920&bih=965#vhid=yid_m5ZSUd5zMM&vssid=mosaic
+since many microfluidic involve complex geometries and bcs numerical solvers are developed, tested and used
+
+Ilia talking: calculate shit happens in canal. can't analytically.used in many fluidics devices.rigid cahnnel with an elastic membrane at a specific location.
+
+Many microfluidic devices include a portion such as the one depicted in figure 1. It's a rigid rectangular channel with an elastic membrane embedded on one of the walls. Paper 2 uses such a design to build a microfluidic transistor. Due to the complex geometry, we use a numerical solver to investigate the flow fields.
+
+We use dolfinx ... 
+
+Specifically, the idea of controlling the flow parameters by careful design of the microfluidic channel has recently gained a lot of popularity. The advantage of this is that no active intervention is required to tune the flow, the intrinsic geometry of the channel results in the intended flow conditions. For example, "Elasto-inertial focusing and particle migration in high aspect ratio microchannels for high-throughput separation". These microfluidic devices usually involve a large parametric space and exactly choosing the right parameters serves as the bottleneck in the design phase. The futility of achieving this by actually building the channel and then measuring the flow parameters renders simulations an indispensable part of the design phase.
