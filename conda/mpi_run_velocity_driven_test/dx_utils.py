@@ -165,7 +165,7 @@ def plot_2dmesh(V, mesh, u_n, c):
         plotter.close()
     mesh.comm.Barrier()
 
-def create_obst(comm,H=.41, L=2.2,r=.3, Ox=1.5, lc=.07):
+def create_obst(comm,H=1, L=10,r=.3, Ox=5, lc=.02):
     """
     Create a 2D mesh of a canal with a circular obstacle using GMSH.
 
