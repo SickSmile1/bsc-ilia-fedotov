@@ -10,8 +10,8 @@ The parametric study for radial obstacle is located at
 and can be run with  
 mpirun -n 4 python3 sim_mpi.py --mode loop --save 1 --length 10 --pressure_range 500 600 10 --radius_range 0.01 0.3 10
 # Membrane ODE implementation and tests
-The initial development notebook and results with a membrane obstacle are located at
-[02_zeta_function](conda/mpi_run/02_zeta_function)
+The initial development notebook and results with a membrane obstacle are located at   
+[02_zeta_function](conda/mpi_run/02_zeta_function)   
 # membrane obstacle simulation  
 The parametric study for iterative membrane simulations is located at  
 [sim_mpi_iterative.py](conda/mpi_run/03_membrane_parametric_simulation/sim_mpi_iterative.py)  
