@@ -32,3 +32,5 @@ A reference solution is provided at
 # Timing test for DOLFINx FEM simulation
 A timing test was run using our code, the notebook is located at
 [timed_testrun_with_mpi](conda/timed_testrun_with_mpi)
+# Bachelor Thesis  
+The PDF for the Thesis is at the root directory  
