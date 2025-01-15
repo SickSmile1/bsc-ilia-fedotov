@@ -1,0 +1,552 @@
+{
+  "dtoolcore_version": "3.18.3",
+  "hash_function": "md5sum_hexdigest",
+  "items": {
+    "0290618f8b6daeea1a4322a30c97e101c4adbf14": {
+      "hash": "4dee0d8c0690a081595b501c5124b2bf",
+      "relpath": "massflowrate_0.72/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608619.34565
+    },
+    "07b993dbd0a6e0a24d336ddbfa57c39dc92f92a4": {
+      "hash": "be9bff48413da149c982cc76145212ce",
+      "relpath": "p_at_5_0.32/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608570.690169
+    },
+    "09a363f1a4fb5e3956784956f2300304b31d7b3b": {
+      "hash": "3b74fbfbe3dc2b086dd7e1f5294684ac",
+      "relpath": "p_at_5_0.48/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608590.237961
+    },
+    "0c1ce06f0c2ac264c86b946fb8805177a6aa8567": {
+      "hash": "cf83536f82ac894a481984ed87916ded",
+      "relpath": "massflowrate_0.64/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608609.801752
+    },
+    "0d8e8c86a84cc22cfb4a8aa8b78729928f67e686": {
+      "hash": "2c8396eb532c41b2a4a31f561e3f93f0",
+      "relpath": "y_at_5_1.0_0.48/y_at_5_1.0.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608590.233961
+    },
+    "1367612a0203695402a075d71103259498f699ca": {
+      "hash": "8c17bfb4d5e8736bc62cc30eab68b397",
+      "relpath": "y_courve_0.16/y_courve.txt",
+      "size_in_bytes": 17473,
+      "utc_timestamp": 1736608551.042378
+    },
+    "17e32e18085cd0dc230bc0fea9b13b3f761d3dd7": {
+      "hash": "8f7ceaccec9cbbff74b8ecc3e89e39c1",
+      "relpath": "p_courve_0.16/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608551.042378
+    },
+    "1e10696973f3869f34ad17c9811773e25fec5f0c": {
+      "hash": "4615575719ce7761762dae0e0548397f",
+      "relpath": "p_at_5_0.64/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608609.805752
+    },
+    "1eaf1f6dfb7d08aeb70161cfc73cf753af7c7608": {
+      "hash": "987f1e9a93d3e815b6588b8a84576b7f",
+      "relpath": "flux_trapz_0.32/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608570.686169
+    },
+    "2362e3c9c4b161518ad8c14ee0b6bf3a73a0dce4": {
+      "hash": "646b7d2bb3177d3c3b005aa6059c8995",
+      "relpath": "p_courve_0.32/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608570.690169
+    },
+    "24a40b3a1f6f7e4ee4c91e3ee1ce332bcc7ee37e": {
+      "hash": "66cb9ad9ab46aa210c2341992d87da86",
+      "relpath": "y_at_5_1.0_0.32/y_at_5_1.0.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608570.686169
+    },
+    "24ecb537035d2d48c3bf40e6f9ae67514c78ff88": {
+      "hash": "ec73270142fe053f99e52fb64c3d753c",
+      "relpath": "p_at_0_0.64/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608609.805752
+    },
+    "2be80352d7a390be5e253b69f33f31c4b4af9046": {
+      "hash": "fcb1cf2b19fbff3332028357f78c4773",
+      "relpath": "p_at_5_0.16/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608551.042378
+    },
+    "2f3802e71e3ad8e4fda1c36a3a4a4c3acf6fac33": {
+      "hash": "88bff4c5ee546cdaa5d4866e8165d69b",
+      "relpath": "y_at_0_0.40/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608580.450065
+    },
+    "2f3e517942b5cc1de7ee3ec0111258b693842c34": {
+      "hash": "421910a93fc9f86c9f4aa1e73a9b3bb6",
+      "relpath": "y_at_5_1.0_0.40/y_at_5_1.0.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608580.454065
+    },
+    "3039707be13f3662b7c8d374f2170e0c0e215997": {
+      "hash": "063bfee6349b3831886770d536d5bb7c",
+      "relpath": "p_at_1_0.32/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608570.690169
+    },
+    "30c606395fdc524a9f7ac11cdaa9d1c8df76a247": {
+      "hash": "c2d1aece542e939cc64ec365e66e2113",
+      "relpath": "p_at_0_0.16/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608551.042378
+    },
+    "31ea555aec9932b7898de855461076617b245aaa": {
+      "hash": "7e4f62d95128ec2b1eb0b48df245dee6",
+      "relpath": "p_at_0_0.56/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608599.837858
+    },
+    "3452b9a7ffa4b472f5ce35a6bcc234e77047a56f": {
+      "hash": "5c4a955ef922b55d067322c6e428526e",
+      "relpath": "p_at_1_0.56/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608599.837858
+    },
+    "39c25b96a408d1c2ac3b1127f50dc4807520d182": {
+      "hash": "2981f5fe8660dedcb8d0aed79a54fab9",
+      "relpath": "flux_trapz_0.64/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608609.801752
+    },
+    "3a2c4b7e079492b1078944e659840b77ece76725": {
+      "hash": "e5c5ee4dd7348a0dc328edefcd08bdff",
+      "relpath": "p_at_0_0.72/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608619.34565
+    },
+    "3a67dfa63f6c88f91a50655afa7d3e8dab831b18": {
+      "hash": "5ce7f75fc1183de75a318b397a6d40bf",
+      "relpath": "y_at_0_0.32/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608570.686169
+    },
+    "43509fa2a66f87125abfd5ac15c911d8dc2fc8a8": {
+      "hash": "1dec1050a2f1064a7e807e30cb97000f",
+      "relpath": "massflowrate_0.24/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608560.930273
+    },
+    "43798b0dac0d8d7c72b93224625318253091af58": {
+      "hash": "185836b1e6b00234ca176fdec9c07a3c",
+      "relpath": "flux_trapz_0.16/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608551.038378
+    },
+    "447e3f46adc6a6de3c31458e99faa8d1c82aac84": {
+      "hash": "fed39b7012e8f3e79ebe9d3fd9fff2ae",
+      "relpath": "massflowrate_0.16/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608551.038378
+    },
+    "4656338fa2d02ed913eb494666fddfa65e2915fc": {
+      "hash": "39b43fc9934d9e49a04c6a160ddde799",
+      "relpath": "flux_trapz_0.08/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608540.886486
+    },
+    "46d88578c9559feced7e54aea265936b0dea7113": {
+      "hash": "2d0cc882241bc6fa4dc5fc2e88f0e3c1",
+      "relpath": "y_at_5_1.0_0.56/y_at_5_1.0.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608599.837858
+    },
+    "4a5e6ba7d31cfa00195927057815bd4017bd0958": {
+      "hash": "d3fe5c138fce326cb82c587662c41450",
+      "relpath": "y_at_1_0.24/y_at_1.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608560.930273
+    },
+    "536816161d215211432a3cfe1764abc84a388e91": {
+      "hash": "8249a8f54f5b0e36429a17b518da3235",
+      "relpath": "p_at_0_0.40/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608580.454065
+    },
+    "57a45a0e49de334cb213f64de5a674b8c36738cc": {
+      "hash": "7c788892f4e0dc44d0a83cde51655ac0",
+      "relpath": "y_at_0_0.64/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608609.805752
+    },
+    "5a918eac891361f2288995f64881a46c5e7e7cf4": {
+      "hash": "1e848924f41d056b0a69ec0c3424a791",
+      "relpath": "p_courve_0.72/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608619.34965
+    },
+    "5fa4e65760136f25f6d732e8b5996fa8f1d4880f": {
+      "hash": "c45082e35ab82d1a25f320ccc7603cba",
+      "relpath": "p_at_1_0.16/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608551.042378
+    },
+    "62a51694459978e2eb447e354e09be8fb02f9985": {
+      "hash": "6c25869dfc4d311ca2236ad98bf14ab5",
+      "relpath": "p_at_0_0.32/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608570.686169
+    },
+    "67f0bf8edc304c0ed922cbfae9832735be854068": {
+      "hash": "604fb79d560cbc0c2d0f2dfff5f0342d",
+      "relpath": "p_at_1_0.08/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608540.890486
+    },
+    "747edc4668219fc5f55b89a5890f4e6d02850172": {
+      "hash": "f11b6d14d01490d717a4b35c85a5bad8",
+      "relpath": "y_at_0_0.16/y_at_0.txt",
+      "size_in_bytes": 3478,
+      "utc_timestamp": 1736608551.038378
+    },
+    "76243ece357b90b7b1d966b8b19a5486cf818944": {
+      "hash": "1f89bef37cdc3e7d1d81c72e02ebd679",
+      "relpath": "massflowrate_0.48/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608590.233961
+    },
+    "7c36a6504722b7735c2c10f3bde6b68710b8c022": {
+      "hash": "6f8d85f2c921ffa8c896f7921ffd6270",
+      "relpath": "y_at_0_0.56/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608599.837858
+    },
+    "7cb63ad3c8a0f501de00c8d9e879be741d743b1a": {
+      "hash": "bd3ac9d6072c76395fdd17ecd7b7695f",
+      "relpath": "y_courve_0.48/y_courve.txt",
+      "size_in_bytes": 17473,
+      "utc_timestamp": 1736608590.237961
+    },
+    "7cc7cdf79f519050150eac94baed90cf823ef10c": {
+      "hash": "278faee7526420bc47cfade60cc8c460",
+      "relpath": "y_at_1_0.40/y_at_1.txt",
+      "size_in_bytes": 3464,
+      "utc_timestamp": 1736608580.454065
+    },
+    "7fb9ae578d53ab222c4133a62caf332cb2d39780": {
+      "hash": "0ba9fbcd6fce4f8f4aa834767e07035d",
+      "relpath": "p_at_0_0.48/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608590.237961
+    },
+    "81e590b3ead37550515c0606f088fbac683687c4": {
+      "hash": "5ac352877bbe6b28224597d35dbb0139",
+      "relpath": "massflowrate_0.56/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608599.837858
+    },
+    "8c00e588226a7bc60a5ad69a6bb3e28301f6cb4d": {
+      "hash": "bef74eb3c0ad8cb8ecb3feeb77637efe",
+      "relpath": "p_at_1_0.48/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608590.237961
+    },
+    "8ea8a4a593536d2886cacaa00a5ab4a1e3296326": {
+      "hash": "530d0e06232cd78615e6a792405232a7",
+      "relpath": "y_courve_0.32/y_courve.txt",
+      "size_in_bytes": 17471,
+      "utc_timestamp": 1736608570.690169
+    },
+    "91ec721a1dae8bd35f6a31547c51c80ea4a68845": {
+      "hash": "b748a3199b4f95ad54f162e953bd1319",
+      "relpath": "flux_trapz_0.48/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608590.233961
+    },
+    "9710c0849c07a700f25fb8643d78c7067b907a48": {
+      "hash": "8bb3fbe5bf531cf6d18a48d3bf69dccc",
+      "relpath": "p_at_5_0.08/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608540.890486
+    },
+    "9877741f4b0c49be7303b156a6b9923456bfdff0": {
+      "hash": "051c9a25704dec426bed41ee2c492239",
+      "relpath": "y_at_1_0.56/y_at_1.txt",
+      "size_in_bytes": 3464,
+      "utc_timestamp": 1736608599.837858
+    },
+    "9c6ac25e470288fd483bda97d319f4b19255e4fa": {
+      "hash": "57f8cc4320f3d3f2bda9e3a40b820408",
+      "relpath": "y_at_1_0.72/y_at_1.txt",
+      "size_in_bytes": 3464,
+      "utc_timestamp": 1736608619.34565
+    },
+    "9c7471fa2b36e9c9d66f91818bd5b936b0e8cdcd": {
+      "hash": "ab7a7ef714a69e46fa03fe873afa2ddd",
+      "relpath": "y_at_1_0.48/y_at_1.txt",
+      "size_in_bytes": 3464,
+      "utc_timestamp": 1736608590.237961
+    },
+    "9cd2a62cde575dcb4cd312b703f6d3d0cd4c34a4": {
+      "hash": "cd96e6ffb121ce3bc92d929d373e9187",
+      "relpath": "p_at_5_0.40/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608580.454065
+    },
+    "a4fb8be0c4e445848c1432ff773b072913217088": {
+      "hash": "664cd603009cd7f4f562d8e52d5e728c",
+      "relpath": "p_courve_0.48/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608590.237961
+    },
+    "a6e45eb47fdb87a5ef367c94f66183a3569f7422": {
+      "hash": "02aa80a3c9e3bc17cc1faedc872700fd",
+      "relpath": "y_courve_0.64/y_courve.txt",
+      "size_in_bytes": 17486,
+      "utc_timestamp": 1736608609.805752
+    },
+    "a71eec2b4ef9f9efd21d2a2edebb4f724605edb0": {
+      "hash": "b8bbe15dac69e9020a6394e0817e4b06",
+      "relpath": "y_at_0_0.72/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608619.34565
+    },
+    "aa8336bfec314018470c0914b905e7e785d10b5b": {
+      "hash": "31c31f0452576701239262d33fd16541",
+      "relpath": "mesh.msh",
+      "size_in_bytes": 1177421,
+      "utc_timestamp": 1736608530.774594
+    },
+    "ab759669a28036cada75126eaf60106f0c83bcb9": {
+      "hash": "015aa0a694e80f2b336941e769d34db0",
+      "relpath": "p_at_1_0.64/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608609.805752
+    },
+    "ab791f44bc7d0f146e16f4c3686c62002531ffd2": {
+      "hash": "426454b3d3bbdf34c4a319391dba1fd1",
+      "relpath": "p_at_1_0.24/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608560.930273
+    },
+    "ac60b9f1917dd89b96eeab64cbdbb4c088d18dde": {
+      "hash": "5edb3430194394917575684620d0a4e7",
+      "relpath": "y_courve_0.56/y_courve.txt",
+      "size_in_bytes": 17478,
+      "utc_timestamp": 1736608599.841858
+    },
+    "b5cfa0835abd94f8356b0e6850a8c99939bbcc57": {
+      "hash": "2f4d488fd932f7d55ac56507a92b9352",
+      "relpath": "y_at_5_1.0_0.24/y_at_5_1.0.txt",
+      "size_in_bytes": 3460,
+      "utc_timestamp": 1736608560.930273
+    },
+    "ba16dd1357071aaddf6b18fc19c0b8f3cbacaae2": {
+      "hash": "4ed3007f6f705e8ae3cc6d11e7e78946",
+      "relpath": "p_at_1_0.72/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608619.34565
+    },
+    "bd7ab6d581130897f610c03e210217d146437599": {
+      "hash": "98eec5d4d35c14a42040b9d68a7e1f0f",
+      "relpath": "y_at_5_1.0_0.64/y_at_5_1.0.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608609.805752
+    },
+    "c12b2a42708b8ab81956d10df0ff86cabfc60bf6": {
+      "hash": "3d105a3f793c219fd29633d447b78892",
+      "relpath": "p_at_0_0.24/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608560.930273
+    },
+    "c1dd5e90d731b156f1263e26876a41eb9d3efd7f": {
+      "hash": "8df26aa09f4348855e8de78971627d2e",
+      "relpath": "massflowrate_0.32/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608570.686169
+    },
+    "c4cfc214c7c7760f0ff12f24f49cc168a95b9759": {
+      "hash": "620401e27153551841a7260d46579631",
+      "relpath": "y_at_5_1.0_0.72/y_at_5_1.0.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608619.34565
+    },
+    "c505871d755fc8fc1ab1066b34b072bf3855f2a9": {
+      "hash": "daa9fbde10aec3520849deb23075dfc3",
+      "relpath": "p_at_5_0.24/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608560.930273
+    },
+    "c6007171d579c15b95b0e7b64edec57df74e0955": {
+      "hash": "465e2c3bd3f91fe5244e2f857dbb5a54",
+      "relpath": "p_at_5_0.56/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608599.837858
+    },
+    "c72741be77e2e267b3ec3796238ffe1f5e99a00d": {
+      "hash": "dc3e1914a4690b531f347f390bfa099b",
+      "relpath": "y_at_5_1.0_0.08/y_at_5_1.0.txt",
+      "size_in_bytes": 3455,
+      "utc_timestamp": 1736608540.886486
+    },
+    "c83a3ebaff427f7b6e98af2d96429f4f8729bd81": {
+      "hash": "4a1ede83593b2d055253a587d9f33dc0",
+      "relpath": "y_courve_0.72/y_courve.txt",
+      "size_in_bytes": 17495,
+      "utc_timestamp": 1736608619.34965
+    },
+    "cb28b98cd17ae2eefc1681ff38cc4b149ab88742": {
+      "hash": "c96de31211e6a4cbaef81056ae9a7d54",
+      "relpath": "p_courve_0.56/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608599.837858
+    },
+    "ccc42b1d8be9f75e96efcd9f4b51cbde34827b76": {
+      "hash": "a8210b003a6a58d2287d802dc8e8f95c",
+      "relpath": "p_courve_0.24/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608560.930273
+    },
+    "cdf4c22f5d32094e6fe698345ab4ddefba5984df": {
+      "hash": "4b0532df554b4070b885d1f4237f46be",
+      "relpath": "p_courve_0.08/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608540.890486
+    },
+    "d2e1d7e49e1454b9587a26cf0c04adf25b022d8c": {
+      "hash": "4fb2b2f351604304c7766811ec32bc2d",
+      "relpath": "y_at_1_0.16/y_at_1.txt",
+      "size_in_bytes": 3462,
+      "utc_timestamp": 1736608551.042378
+    },
+    "d548915982568fc3c4211c9b803a17ae073a1fe2": {
+      "hash": "3a81ddcf621fdec30d25449197055b45",
+      "relpath": "massflowrate_0.08/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608540.886486
+    },
+    "d659e81bb3278fb4fdaf8efd2057ca5f29cc2ed9": {
+      "hash": "a0b8d8e86f84a0cfc6b109d6faf577b6",
+      "relpath": "y_at_1_0.64/y_at_1.txt",
+      "size_in_bytes": 3464,
+      "utc_timestamp": 1736608609.805752
+    },
+    "daa973de64235f2150f58abc76d11ab764af2694": {
+      "hash": "3b1cf2e958f131477977a637bf7dbc60",
+      "relpath": "p_at_0_0.08/p_at_0.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608540.890486
+    },
+    "db4f56fc4336254cf6f6f25f0fc82d8a5322c975": {
+      "hash": "f24106b69eeb62bd63d2b928fa6cb05c",
+      "relpath": "p_at_5_0.72/p_at_5.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608619.34565
+    },
+    "dbd25ebd52114aa86115e3567345aea51865dbaf": {
+      "hash": "14b443047f7c766293a4d653b4564559",
+      "relpath": "y_at_0_0.48/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608590.233961
+    },
+    "e3abbd40c7be2093a3bdd5976e13107b39ed20c2": {
+      "hash": "4a22ddfaa5ccfaf8604bbed768cc6530",
+      "relpath": "flux_trapz_0.56/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608599.837858
+    },
+    "e3c21f7b9fb36a35c2a3263547484f36cf47bd6e": {
+      "hash": "95d068c0444df1012fde4ea24b6baaf7",
+      "relpath": "y_at_5_1.0_0.16/y_at_5_1.0.txt",
+      "size_in_bytes": 3458,
+      "utc_timestamp": 1736608551.038378
+    },
+    "e5f2ffbd7571224a607df17d31e7c3154a94d1d0": {
+      "hash": "c23d9b382fafed83c0b28fcf0b70e97d",
+      "relpath": "p_at_1_0.40/p_at_1.txt",
+      "size_in_bytes": 1700,
+      "utc_timestamp": 1736608580.454065
+    },
+    "e77fc5276e5bc33c1a349883bfd21062d3b43b71": {
+      "hash": "55d323a953e2589f8499565d901272bd",
+      "relpath": "y_at_1_0.32/y_at_1.txt",
+      "size_in_bytes": 3461,
+      "utc_timestamp": 1736608570.686169
+    },
+    "e7c597d8f055bc0d1c63ec0636cbc162cb9ebad5": {
+      "hash": "955fd7adf440eed025b641eb538dede6",
+      "relpath": "y_at_0_0.24/y_at_0.txt",
+      "size_in_bytes": 3477,
+      "utc_timestamp": 1736608560.930273
+    },
+    "e8b6bfa4d9c07fc4f830de335c3db5779135648c": {
+      "hash": "db573b9f9c530e3710104d65a7e343fb",
+      "relpath": "flux_trapz_0.24/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608560.930273
+    },
+    "e9df353c52581ed754690a6970da2db726fc5552": {
+      "hash": "61f3688e0d95cb7b053aa766ff720e13",
+      "relpath": "y_at_1_0.08/y_at_1.txt",
+      "size_in_bytes": 3454,
+      "utc_timestamp": 1736608540.886486
+    },
+    "ec50390ef2c0a66062391d7db1411a8a442a2757": {
+      "hash": "891d958cbc2bee7414d2304eeae65c0b",
+      "relpath": "y_courve_0.24/y_courve.txt",
+      "size_in_bytes": 17470,
+      "utc_timestamp": 1736608560.934273
+    },
+    "ecbe6da352afffa24055088c5f1c2272da36c900": {
+      "hash": "c2c96a5b79c21f2e108c040f7a99fb55",
+      "relpath": "y_courve_0.08/y_courve.txt",
+      "size_in_bytes": 17484,
+      "utc_timestamp": 1736608540.890486
+    },
+    "ed923b85db80d22e2d81ac92e01534de4bc8c80e": {
+      "hash": "b54448d5efcc57ec5c0591a93c2001a8",
+      "relpath": "flux_trapz_0.40/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608580.450065
+    },
+    "ee7b630d2bc610980fe7c2bb16d482c55dd2d50a": {
+      "hash": "e751e913b463b7bc3d5d71a2b14906b7",
+      "relpath": "y_courve_0.40/y_courve.txt",
+      "size_in_bytes": 17472,
+      "utc_timestamp": 1736608580.454065
+    },
+    "f2fa494daaf5c583218f497128b6173bc15f7354": {
+      "hash": "73515962bbc93f741e30bf6b0c1e6976",
+      "relpath": "p_courve_0.64/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608609.805752
+    },
+    "f376ed4d8dbf2ce0c824f33c6a48ffe54d77aacd": {
+      "hash": "0a102b34365c64cf254b414b9c435422",
+      "relpath": "flux_trapz_0.72/flux_trapz.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608619.34565
+    },
+    "fa5c0cc840ae24c3a319f6103a2d23e90745b9fe": {
+      "hash": "e1247ee9491fbeebf85cea96f045fcef",
+      "relpath": "massflowrate_0.40/massflowrate.txt",
+      "size_in_bytes": 51,
+      "utc_timestamp": 1736608580.450065
+    },
+    "fad6626455983ba179619f8632bac244b5fb2c97": {
+      "hash": "837e62c6e6c9ac484ac29dfa7d70318e",
+      "relpath": "y_at_0_0.08/y_at_0.txt",
+      "size_in_bytes": 3481,
+      "utc_timestamp": 1736608540.886486
+    },
+    "fdc3c7cc55911e6d7fc01efef6982b841bb149cb": {
+      "hash": "4284d36a7f2dc3ef614c71a63c6d436e",
+      "relpath": "p_courve_0.40/p_courve.txt",
+      "size_in_bytes": 8500,
+      "utc_timestamp": 1736608580.454065
+    }
+  }
+}
