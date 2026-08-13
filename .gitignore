@@ -3,3 +3,4 @@
 *.bp
 ignore/
 tex/*.pdf
+*.ipynb linguist-documentation=true
