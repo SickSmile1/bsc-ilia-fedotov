@@ -1,0 +1,2 @@
+*.ipynb linguist-documentation=true
+*.[1-9] linguist-documentation=true
